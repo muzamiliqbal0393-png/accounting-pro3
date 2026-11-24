@@ -1,0 +1,411 @@
+{% extends 'home_layout.html' %}
+{% from 'partials/icons.html' import icon %}
+{% block title %}ACCOUNTING PRO — Your Complete Accounting Solution{% endblock %}
+
+{% block home_content %}
+
+<!-- ============================== HERO ============================== -->
+<section class="hero" id="home" aria-label="Introduction">
+  <div class="hero-slides" id="heroSlides" aria-hidden="true">
+    <div class="hero-slide is-active">
+      <picture>
+        <source type="image/webp" srcset="{{ url_for('static', filename='images/home/hero-1.webp') }}">
+        <img src="{{ url_for('static', filename='images/home/hero-1.jpg') }}" alt="" width="1672" height="941" fetchpriority="high">
+      </picture>
+    </div>
+    <div class="hero-slide">
+      <picture>
+        <source type="image/webp" srcset="{{ url_for('static', filename='images/home/hero-2.webp') }}">
+        <img src="{{ url_for('static', filename='images/home/hero-2.jpg') }}" alt="" width="1672" height="941" loading="lazy">
+      </picture>
+    </div>
+    <div class="hero-slide">
+      <picture>
+        <source type="image/webp" srcset="{{ url_for('static', filename='images/home/hero-3.webp') }}">
+        <img src="{{ url_for('static', filename='images/home/hero-3.jpg') }}" alt="" width="1672" height="941" loading="lazy">
+      </picture>
+    </div>
+    <div class="hero-slide">
+      <picture>
+        <source type="image/webp" srcset="{{ url_for('static', filename='images/home/hero-4.webp') }}">
+        <img src="{{ url_for('static', filename='images/home/hero-4.jpg') }}" alt="" width="1672" height="941" loading="lazy">
+      </picture>
+    </div>
+  </div>
+  <div class="hero-overlay" aria-hidden="true"></div>
+
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <span class="hero-eyebrow"><span class="dot"></span> Computerized Accounting &amp; Business Management</span>
+      <h1>Accounting Pro <span class="dash">–</span> Your Complete Accounting Solution</h1>
+      <p class="hero-desc">
+        Manage your business accounts, transactions, financial reports and accounting activities
+        in one professional system.
+      </p>
+      <div class="hero-actions">
+        <a class="hp-btn hp-btn-primary hp-btn-lg" href="{{ url_for('register') }}">
+          Get Started Free {{ icon('arrow-right') }}
+        </a>
+        <a class="hp-btn hp-btn-glass hp-btn-lg" href="{{ url_for('login') }}">Login</a>
+      </div>
+      <ul class="hero-chips">
+        <li>{{ icon('shield') }} Double-entry bookkeeping</li>
+        <li>{{ icon('wallet') }} PKR · Decimal accuracy</li>
+        <li>{{ icon('file-text') }} PDF · Word · Excel</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="hero-dots" id="heroDots" role="tablist" aria-label="Hero background images">
+    <button type="button" class="is-active" role="tab" aria-selected="true" aria-label="Show image 1"></button>
+    <button type="button" role="tab" aria-selected="false" aria-label="Show image 2"></button>
+    <button type="button" role="tab" aria-selected="false" aria-label="Show image 3"></button>
+    <button type="button" role="tab" aria-selected="false" aria-label="Show image 4"></button>
+  </div>
+</section>
+
+<!-- ============================ FEATURES ============================ -->
+<section class="hp-section" id="features">
+  <div class="hp-container">
+    <div class="hp-head">
+      <span class="hp-eyebrow">Features</span>
+      <h2>Everything a small business needs to keep its books straight</h2>
+      <p>Every figure in ACCOUNTING PRO is calculated from the entries you post — there are no
+        sample numbers anywhere in the system.</p>
+    </div>
+
+    <div class="hp-grid hp-grid-3">
+      <article class="hp-card hp-feature">
+        <span class="hp-icon">{{ icon('eye') }}</span>
+        <h3>Easy to Use</h3>
+        <p>Clean, familiar screens with live debit and credit totals — no accounting software
+          training required to post a voucher.</p>
+      </article>
+
+      <article class="hp-card hp-feature">
+        <span class="hp-icon">{{ icon('shield') }}</span>
+        <h3>Secure &amp; Reliable</h3>
+        <p>Hashed passwords (PBKDF2-SHA256), session security, CSRF protection on every form and
+          complete per-user data isolation.</p>
+      </article>
+
+      <article class="hp-card hp-feature">
+        <span class="hp-icon">{{ icon('scale') }}</span>
+        <h3>Double Entry Accounting</h3>
+        <p>Compound vouchers, automatic balancing checks, immutable posted entries and
+          reversal-only corrections with a full audit trail.</p>
+      </article>
+
+      <article class="hp-card hp-feature">
+        <span class="hp-icon">{{ icon('file-text') }}</span>
+        <h3>Financial Reports</h3>
+        <p>Trial Balance, Adjusted Trial Balance, Trading Account, Profit &amp; Loss, Balance Sheet,
+          Cash Flow and Post-Closing Trial Balance.</p>
+      </article>
+
+      <article class="hp-card hp-feature">
+        <span class="hp-icon">{{ icon('chart') }}</span>
+        <h3>Business Analysis</h3>
+        <p>Daily to yearly periods, custom date ranges and comparisons, with charts for income,
+          expenses and profit.</p>
+      </article>
+
+      <article class="hp-card hp-feature">
+        <span class="hp-icon">{{ icon('upload') }}</span>
+        <h3>Import &amp; Export</h3>
+        <p>Validated Excel / CSV import with a preview step, and one-click PDF, Word and Excel
+          exports of every report.</p>
+      </article>
+
+      <article class="hp-card hp-feature">
+        <span class="hp-icon">{{ icon('database') }}</span>
+        <h3>Data Backup</h3>
+        <p>Timestamped database backups and a restore that validates the file and never replaces
+          your data without confirmation.</p>
+      </article>
+
+      <article class="hp-card hp-feature hp-feature-cta">
+        <h3>Ready to try it?</h3>
+        <p>Create a free account and set up your own business profile in under a minute.</p>
+        <a class="hp-btn hp-btn-primary" href="{{ url_for('register') }}">Get Started Free</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= MODULES ============================= -->
+<section class="hp-section hp-section-tint" id="modules">
+  <div class="hp-container">
+    <div class="hp-head">
+      <span class="hp-eyebrow">Modules</span>
+      <h2>One system, every accounting module</h2>
+      <p>Each card opens the working module inside the application. Modules that hold business
+        data ask you to sign in first.</p>
+    </div>
+
+    <div class="hp-grid hp-grid-3">
+      <a class="hp-card hp-module" href="{{ url_for('dashboard') }}">
+        <span class="hp-icon">{{ icon('grid') }}</span>
+        <div class="hp-module-body">
+          <h3>Dashboard</h3>
+          <p>Summary cards, charts and the latest activity in one view.</p>
+        </div>
+        <span class="hp-module-go">{{ icon('arrow-right') }}</span>
+      </a>
+
+      <a class="hp-card hp-module" href="{{ url_for('business_profile') }}">
+        <span class="hp-icon">{{ icon('building') }}</span>
+        <div class="hp-module-body">
+          <h3>Business Profile</h3>
+          <p>Business details, logo, currency and financial periods.</p>
+        </div>
+        <span class="hp-module-go">{{ icon('arrow-right') }}</span>
+      </a>
+
+      <a class="hp-card hp-module" href="{{ url_for('accounts') }}">
+        <span class="hp-icon">{{ icon('list') }}</span>
+        <div class="hp-module-body">
+          <h3>Chart of Accounts</h3>
+          <p>Five categories, account codes, opening balances and normal balance.</p>
+        </div>
+        <span class="hp-module-go">{{ icon('arrow-right') }}</span>
+      </a>
+
+      <a class="hp-card hp-module" href="{{ url_for('transaction_new') }}">
+        <span class="hp-icon">{{ icon('plus') }}</span>
+        <div class="hp-module-body">
+          <h3>Transactions</h3>
+          <p>Compound vouchers with live debit, credit and difference totals.</p>
+        </div>
+        <span class="hp-module-go">{{ icon('arrow-right') }}</span>
+      </a>
+
+      <a class="hp-card hp-module" href="{{ url_for('journal') }}">
+        <span class="hp-icon">{{ icon('book') }}</span>
+        <div class="hp-module-body">
+          <h3>General Journal</h3>
+          <p>Every posted line in date order, with reversals linked to the original.</p>
+        </div>
+        <span class="hp-module-go">{{ icon('arrow-right') }}</span>
+      </a>
+
+      <a class="hp-card hp-module" href="{{ url_for('ledger') }}">
+        <span class="hp-icon">{{ icon('layers') }}</span>
+        <div class="hp-module-body">
+          <h3>Ledger Accounts</h3>
+          <p>Per-account ledger with opening balance and running balance.</p>
+        </div>
+        <span class="hp-module-go">{{ icon('arrow-right') }}</span>
+      </a>
+
+      <a class="hp-card hp-module" href="{{ url_for('trial_balance_page') }}">
+        <span class="hp-icon">{{ icon('scale') }}</span>
+        <div class="hp-module-body">
+          <h3>Trial Balance</h3>
+          <p>Balanced / Not Balanced status with total debit, credit and difference.</p>
+        </div>
+        <span class="hp-module-go">{{ icon('arrow-right') }}</span>
+      </a>
+
+      <a class="hp-card hp-module" href="{{ url_for('profit_loss_page') }}">
+        <span class="hp-icon">{{ icon('file-text') }}</span>
+        <div class="hp-module-body">
+          <h3>Financial Statements</h3>
+          <p>Trading, Profit &amp; Loss, Balance Sheet, Cash Flow and closing entries.</p>
+        </div>
+        <span class="hp-module-go">{{ icon('arrow-right') }}</span>
+      </a>
+
+      <a class="hp-card hp-module" href="{{ url_for('import_center') }}">
+        <span class="hp-icon">{{ icon('upload') }}</span>
+        <div class="hp-module-body">
+          <h3>Import &amp; Export</h3>
+          <p>Upload Excel / CSV with validation, and export reports as PDF, Word or Excel.</p>
+        </div>
+        <span class="hp-module-go">{{ icon('arrow-right') }}</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== ABOUT ============================== -->
+<section class="hp-section" id="about">
+  <div class="hp-container hp-about">
+    <div class="hp-about-copy">
+      <span class="hp-eyebrow">About ACCOUNTING PRO</span>
+      <h2>A complete computerized accounting system, built the way accountants work</h2>
+      <p>
+        ACCOUNTING PRO is a full double-entry accounting and business management system for small
+        and medium businesses. It replaces manual cash books and spreadsheets with one controlled
+        set of records: you post vouchers, and every report — trial balance, trading account,
+        profit &amp; loss, balance sheet, cash flow — is produced from those same entries.
+      </p>
+      <p>
+        The system follows standard accounting practice. Opening balances are entered per account,
+        posted vouchers can never be edited or deleted (only reversed), adjusting entries are kept
+        separate from ordinary vouchers, and closing entries move the period result into capital.
+        Money is stored in exact decimal values, never floating point, so totals always reconcile.
+      </p>
+      <p>
+        Every business gets its own isolated data. Nothing is shared, nothing is simulated, and no
+        report ever forces a balancing figure — if your books do not balance, the report says so.
+      </p>
+      <div class="hp-about-actions">
+        <a class="hp-btn hp-btn-primary" href="{{ url_for('register') }}">Create your account</a>
+        <a class="hp-btn hp-btn-outline" href="{{ url_for('login') }}">Sign in</a>
+      </div>
+    </div>
+
+    <aside class="hp-about-panel" aria-label="Accounting rules used by the system">
+      <h3>Built-in accounting rules</h3>
+      <ul class="hp-check-list">
+        <li>{{ icon('check') }} Opening balances plus posted vouchers drive every report</li>
+        <li>{{ icon('check') }} Debit must equal credit before a voucher can be posted</li>
+        <li>{{ icon('check') }} Posted entries are immutable — corrections are reversals</li>
+        <li>{{ icon('check') }} Adjustments are tracked separately, then merged into the adjusted trial balance</li>
+        <li>{{ icon('check') }} Closing stock posted as Dr Closing Stock / Cr Trading A/c</li>
+        <li>{{ icon('check') }} Balance Sheet check: Assets = Liabilities + Equity, never forced</li>
+        <li>{{ icon('check') }} Templates and reports use your own data only — Rs. 0.00 when empty</li>
+      </ul>
+    </aside>
+  </div>
+</section>
+
+<!-- =========================== WHY CHOOSE US =========================== -->
+<section class="hp-section hp-section-navy" id="why">
+  <div class="hp-container">
+    <div class="hp-head hp-head-light">
+      <span class="hp-eyebrow hp-eyebrow-light">Why Choose Us</span>
+      <h2>Features that are actually implemented — not promised</h2>
+      <p>Everything listed here is part of the working system you sign into today.</p>
+    </div>
+
+    <div class="hp-grid hp-grid-3 hp-why-grid">
+      <div class="hp-why">
+        <span class="hp-icon hp-icon-light">{{ icon('scale') }}</span>
+        <h3>Correct double entry</h3>
+        <p>Compound entries, automatic Dr/Cr totals, a difference indicator and posting blocked
+          until the voucher balances.</p>
+      </div>
+      <div class="hp-why">
+        <span class="hp-icon hp-icon-light">{{ icon('file-text') }}</span>
+        <h3>Statements in the right order</h3>
+        <p>Trial balance → adjustments → adjusted trial balance → trading → P&amp;L → balance sheet,
+          then closing entries and a post-closing trial balance.</p>
+      </div>
+      <div class="hp-why">
+        <span class="hp-icon hp-icon-light">{{ icon('sliders') }}</span>
+        <h3>Eleven adjustment types</h3>
+        <p>Accruals, prepayments, depreciation, closing stock, bad debts and more — each posted
+          with its own voucher number.</p>
+      </div>
+      <div class="hp-why">
+        <span class="hp-icon hp-icon-light">{{ icon('search') }}</span>
+        <h3>Traceable to the ledger</h3>
+        <p>Every amount can be followed back to the voucher, the account and the running balance
+          in the general ledger.</p>
+      </div>
+      <div class="hp-why">
+        <span class="hp-icon hp-icon-light">{{ icon('download') }}</span>
+        <h3>Professional exports</h3>
+        <p>Letterhead PDFs, editable Word documents and a 17-sheet Excel workbook generated from
+          your live database.</p>
+      </div>
+      <div class="hp-why">
+        <span class="hp-icon hp-icon-light">{{ icon('lock') }}</span>
+        <h3>Data you control</h3>
+        <p>Download a backup at any time, restore it with integrity validation, and review every
+          action in the audit log.</p>
+      </div>
+    </div>
+
+    <div class="hp-facts">
+      <div class="hp-fact"><strong>32</strong><span>accounts in the default chart</span></div>
+      <div class="hp-fact"><strong>17</strong><span>sheets in the full Excel export</span></div>
+      <div class="hp-fact"><strong>11</strong><span>adjustment types supported</span></div>
+      <div class="hp-fact"><strong>53</strong><span>automated tests passing</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= CONTACT ============================= -->
+<section class="hp-section hp-section-tint" id="contact">
+  <div class="hp-container hp-contact">
+    <div class="hp-contact-copy">
+      <span class="hp-eyebrow">Contact</span>
+      <h2>Questions about ACCOUNTING PRO?</h2>
+      <p>Send a message using the form and it is recorded in the application's contact log.
+        For account access, sign in or create a free account — no message needed.</p>
+
+      <ul class="hp-contact-points">
+        <li>
+          <span class="hp-icon">{{ icon('user') }}</span>
+          <div><strong>Already have an account?</strong><span>Sign in to reach your dashboard.</span></div>
+        </li>
+        <li>
+          <span class="hp-icon">{{ icon('users') }}</span>
+          <div><strong>New here?</strong><span>Registration is free and takes under a minute.</span></div>
+        </li>
+        <li>
+          <span class="hp-icon">{{ icon('clock') }}</span>
+          <div><strong>Support hours</strong><span>Monday to Saturday, 9:00 – 18:00 (PKT).</span></div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="hp-card hp-contact-card">
+      {% if contact_sent %}
+        <div class="alert alert-success" role="status">
+          Thank you — your message has been recorded. We will get back to you.
+        </div>
+      {% endif %}
+      {% if contact_errors %}
+        <div class="alert alert-danger" role="alert">
+          <strong>Please fix the following:</strong>
+          <ul class="mb-0 mt-1">
+            {% for error in contact_errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('contact') }}" id="contactForm" novalidate>
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        {# honeypot: hidden from people, tempting for bots #}
+        <div class="hp-hp-field" aria-hidden="true">
+          <label for="website">Website</label>
+          <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+        </div>
+
+        <div class="hp-form-row">
+          <div class="hp-field">
+            <label for="cname">Full name <span class="req">*</span></label>
+            <input type="text" id="cname" name="name" required minlength="2" maxlength="80"
+                   placeholder="e.g. Ali Raza" value="{{ (form or {}).get('name','') }}">
+          </div>
+          <div class="hp-field">
+            <label for="cemail">Email address <span class="req">*</span></label>
+            <input type="email" id="cemail" name="email" required maxlength="120"
+                   placeholder="you@business.com" value="{{ (form or {}).get('email','') }}">
+          </div>
+        </div>
+
+        <div class="hp-field">
+          <label for="csubject">Subject</label>
+          <input type="text" id="csubject" name="subject" maxlength="120"
+                 placeholder="What is this about?" value="{{ (form or {}).get('subject','') }}">
+        </div>
+
+        <div class="hp-field">
+          <label for="cmessage">Message <span class="req">*</span></label>
+          <textarea id="cmessage" name="message" rows="5" required minlength="10" maxlength="2000"
+                    placeholder="Write your message (at least 10 characters)">{{ (form or {}).get('message','') }}</textarea>
+        </div>
+
+        <button class="hp-btn hp-btn-primary hp-btn-block" type="submit">Send message</button>
+        <p class="hp-form-note">Your details are used only to reply to this message.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

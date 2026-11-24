@@ -14,7 +14,7 @@ from decimal import Decimal, InvalidOperation
 from functools import wraps
 
 from flask import (Flask, abort, flash, g, jsonify, redirect, render_template,
-                   request, send_file, session, url_for)
+                   request, send_file, session, url_for, current_app)
 from sqlalchemy import func
 
 from config import Config, ensure_dirs, prepare_data_dir, IS_SERVERLESS
@@ -383,12 +383,88 @@ def register_routes(app):
         return render_template("error.html", code=code, title=title,
                                message=message), code
 
-    # -- auth -------------------------------------------------------------
+    # -- public home page -------------------------------------------------
     @app.route("/")
     def index():
-        if current_user():
-            return redirect(url_for("dashboard"))
-        return redirect(url_for("login"))
+        """Public home page — the first screen a visitor sees.
+
+        Signing in still lands on the existing dashboard; protected routes keep
+        their own authentication, so nothing about the application flow changes.
+        """
+        return render_template(
+            "home.html",
+            form={},
+            contact_errors=None,
+            contact_sent=session.pop("contact_sent", False),
+        )
+
+    @app.route("/contact", methods=["POST"])
+    def contact():
+        """Contact form on the home page.
+
+        Validated server-side (the browser's own validation is a convenience,
+        never the guarantee). Messages are appended to a JSON-lines log inside
+        the application's upload folder - no database table is added or changed.
+        """
+        import re as _re
+
+        form = request.form
+        errors = []
+
+        # honeypot: a real visitor never fills this hidden field
+        if (form.get("website") or "").strip():
+            return redirect(url_for("index") + "#contact")
+
+        name = (form.get("name") or "").strip()
+        email = (form.get("email") or "").strip()
+        subject = (form.get("subject") or "").strip()
+        message = (form.get("message") or "").strip()
+
+        if len(name) < 2:
+            errors.append("Please enter your full name.")
+        if not _re.match(r"^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$", email):
+            errors.append("Please enter a valid email address.")
+        if len(subject) > 120:
+            errors.append("Subject is too long (120 characters maximum).")
+        if len(message) < 10:
+            errors.append("Please write a message of at least 10 characters.")
+        if len(message) > 2000:
+            errors.append("Message is too long (2000 characters maximum).")
+
+        if errors:
+            return render_template("home.html", form=form,
+                                   contact_errors=errors, contact_sent=False), 400
+
+        record = {
+            "received_at": datetime.now().isoformat(timespec="seconds"),
+            "name": name,
+            "email": email,
+            "subject": subject,
+            "message": message,
+        }
+        try:
+            folder = current_app.config["UPLOAD_FOLDER"]
+            os.makedirs(folder, exist_ok=True)
+            with open(os.path.join(folder, "contact_messages.jsonl"), "a",
+                      encoding="utf-8") as handle:
+                handle.write(json.dumps(record) + "\n")
+        except OSError:
+            # never lose the visitor's message because of a disk problem
+            flash("Your message could not be saved just now. Please try again.", "danger")
+            return redirect(url_for("index") + "#contact")
+
+        session["contact_sent"] = True
+        return redirect(url_for("index") + "#contact")
+
+    @app.route("/privacy")
+    def privacy():
+        return render_template("privacy.html")
+
+    @app.route("/terms")
+    def terms():
+        return render_template("terms.html")
+
+    # -- auth -------------------------------------------------------------
 
     @app.route("/register", methods=["GET", "POST"])
     def register():

@@ -1,0 +1,49 @@
+{% extends 'home_layout.html' %}
+{% block title %}Terms & Conditions · ACCOUNTING PRO{% endblock %}
+
+{% block home_content %}
+<section class="hp-doc">
+  <div class="hp-doc-inner">
+    <h1>Terms &amp; Conditions</h1>
+    <p class="hp-doc-meta">Last updated: {{ today.strftime('%d %B %Y') }}</p>
+
+    <p>By using ACCOUNTING PRO you accept the terms below.</p>
+
+    <h2>1. Purpose of the software</h2>
+    <p>ACCOUNTING PRO is a computerized accounting and business management system. It records the
+      entries <em>you</em> provide and produces reports from them. It does not give tax, audit or
+      legal advice, and it does not verify the accuracy of the source documents you enter.</p>
+
+    <h2>2. Your responsibilities</h2>
+    <ul>
+      <li>Keep your login credentials confidential and use your own account.</li>
+      <li>Enter correct account codes, dates and amounts, and post only balanced vouchers.</li>
+      <li>Take regular backups from Backup &amp; Restore before major work.</li>
+      <li>Use the system in line with the accounting rules and laws that apply to your business.</li>
+    </ul>
+
+    <h2>3. Accounting integrity rules</h2>
+    <p>Posted vouchers cannot be edited or deleted; corrections are made by posting a reversal or
+      an adjusting entry, which keeps the audit trail complete. Reports never insert a balancing
+      figure: if your books do not balance, the report shows the difference so it can be fixed.</p>
+
+    <h2>4. Availability and data</h2>
+    <p>The system runs on a local SQLite database and is provided as-is, as a final-year
+      practical project. You are responsible for your own backups. The authors are not
+      liable for loss of data resulting from hardware failure, deletion, or failure to take a
+      backup.</p>
+
+    <h2>5. Acceptable use</h2>
+    <p>Do not attempt to access another user's business data, bypass authentication, upload
+      malicious files, or use the import facility to inject content other than accounting data.</p>
+
+    <h2>6. Changes to these terms</h2>
+    <p>These terms may be updated as the system develops. Continued use of the application after an
+      update means you accept the revised terms.</p>
+
+    <h2>7. Contact</h2>
+    <p>Questions about these terms can be sent through the
+      <a href="{{ url_for('index') }}#contact">contact form</a> on the home page.</p>
+  </div>
+</section>
+{% endblock %}

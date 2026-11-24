@@ -36,6 +36,26 @@ Run the automated test suite:
 python -m pytest -q               # 53 tests
 ```
 
+### Public home page
+
+The root URL `/` is a public marketing page (`templates/home.html`, plus
+`privacy.html` and `terms.html`) built on its own layout
+(`templates/home_layout.html`). It uses the same palette and design tokens as the
+application but lives in separate files — `static/css/home.css` and
+`static/js/home.js` — so no existing template, stylesheet or route is altered.
+
+* Hero with four AI-generated backgrounds in `static/images/home/` (jpg + webp),
+  a 5-second crossfade slider, indicator dots and a pause-on-hover behaviour that
+  also honours `prefers-reduced-motion`.
+* Sections: features, modules (each card links to the existing route), about,
+  why choose us, contact form and footer.
+* The contact form posts to `POST /contact`, validates on the client and the
+  server, and appends each message to `uploads/contact_messages.jsonl`
+  (no database table is added or changed).
+* `Login`, `Register`, `Get Started Free`, the module cards and the header CTA
+  all point at the existing routes; `/dashboard` and every other protected page
+  keep their existing authentication and redirects (`302 → /login?next=...`).
+
 ### Going live
 
 The repo is deployment-ready: `api/index.py` + `vercel.json` for Vercel,

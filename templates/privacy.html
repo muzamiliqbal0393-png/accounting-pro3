@@ -1,0 +1,52 @@
+{% extends 'home_layout.html' %}
+{% block title %}Privacy Policy · ACCOUNTING PRO{% endblock %}
+
+{% block home_content %}
+<section class="hp-doc">
+  <div class="hp-doc-inner">
+    <h1>Privacy Policy</h1>
+    <p class="hp-doc-meta">Last updated: {{ today.strftime('%d %B %Y') }}</p>
+
+    <p>ACCOUNTING PRO is an accounting application. This policy explains what the system stores
+      and how it is used.</p>
+
+    <h2>1. Your accounting data</h2>
+    <p>Everything you enter — business profile, accounts, vouchers, adjustments, products,
+      inventory, budgets and imports — is stored in the application's own database and belongs to
+      you. Data is isolated per user account: no other account can read, list or report on your
+      business records.</p>
+
+    <h2>2. Account information</h2>
+    <p>Registration stores your name, email address and a password hash. Passwords are hashed with
+      PBKDF2-SHA256 and are never stored or displayed in readable form. Your email address is used
+      only to sign you in and to identify your account.</p>
+
+    <h2>3. Contact messages</h2>
+    <p>If you use the contact form on the home page, the name, email address, subject and message
+      you submit are recorded in the application's contact log so the message can be answered.
+      They are not used for marketing and are not shared with third parties.</p>
+
+    <h2>4. Cookies and sessions</h2>
+    <p>The application uses a single session cookie to keep you signed in. It is marked HttpOnly
+      and SameSite=Lax. A CSRF token is kept in the session to protect forms against cross-site
+      request forgery. No advertising or analytics cookies are used.</p>
+
+    <h2>5. Files you upload</h2>
+    <p>Logos, voucher attachments and imported spreadsheets are stored in the application's upload
+      folder and are limited by type and size (maximum 8 MB per file). Database backups you create
+      are stored in the same private area until you download or delete them.</p>
+
+    <h2>6. Your control over the data</h2>
+    <ul>
+      <li>Download a complete backup of your database at any time from Backup &amp; Restore.</li>
+      <li>Export every report as PDF, Word or Excel.</li>
+      <li>Review who did what and when in the audit log.</li>
+      <li>Remove your own records through the application's normal, auditable actions.</li>
+    </ul>
+
+    <h2>7. Contact</h2>
+    <p>Questions about this policy can be sent through the
+      <a href="{{ url_for('index') }}#contact">contact form</a> on the home page.</p>
+  </div>
+</section>
+{% endblock %}
