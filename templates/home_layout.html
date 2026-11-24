@@ -15,7 +15,7 @@
   <meta name="description" content="ACCOUNTING PRO — a complete computerized accounting and business management system. Double-entry vouchers, trial balance, financial statements, inventory, budgets and professional PDF, Word and Excel reports.">
   <link rel="manifest" href="{{ url_for('manifest') }}">
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/icon-192.png') }}">
-  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
@@ -26,7 +26,7 @@
 <header class="hp-nav" id="hpNav">
   <div class="hp-nav-inner">
     <a class="hp-brand" href="{{ url_for('index') }}" aria-label="ACCOUNTING PRO — home">
-      <span class="brand-mark hp-brand-mark">AP</span>
+      <img class="brand-mark hp-brand-mark hp-brand-logo" src="{{ url_for('static', filename='images/brand/logo-mark.png') }}" alt="ACCOUNTING PRO logo">
       <span class="hp-brand-text">
         <strong>ACCOUNTING PRO</strong>
         <small>Business Management</small>
@@ -72,7 +72,7 @@
   <div class="hp-footer-inner">
     <div class="hp-footer-brand">
       <a class="hp-brand" href="{{ url_for('index') }}">
-        <span class="brand-mark hp-brand-mark">AP</span>
+        <img class="brand-mark hp-brand-mark hp-brand-logo" src="{{ url_for('static', filename='images/brand/logo-mark.png') }}" alt="ACCOUNTING PRO logo">
         <span class="hp-brand-text">
           <strong>ACCOUNTING PRO</strong>
           <small>Business Management</small>

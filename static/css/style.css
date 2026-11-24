@@ -81,6 +81,11 @@ hr { border-top: 1px solid var(--line); opacity: 1; }
   display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 15px;
   box-shadow: 0 6px 16px rgba(36, 87, 214, .45);
 }
+.brand-mark-logo {
+  width: 42px; height: 42px;
+  background: transparent; box-shadow: none; object-fit: contain; padding: 0;
+  filter: drop-shadow(0 4px 10px rgba(9, 23, 46, .45));
+}
 .brand-text { line-height: 1.15; }
 .brand-text strong { color: #fff; font-size: 14px; letter-spacing: .06em; display: block; }
 .brand-text span { font-size: 10.5px; color: #8fa2c6; letter-spacing: .04em; }

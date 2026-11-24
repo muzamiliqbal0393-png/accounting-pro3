@@ -16,6 +16,8 @@
   <meta name="theme-color" content="#101D3A">
   <title>{% block title %}Sign in{% endblock %} · ACCOUNTING PRO</title>
   <link rel="manifest" href="{{ url_for('manifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
@@ -28,7 +30,7 @@
     <div class="av-bg" style="background-image:url('{{ url_for('static', filename='images/auth/auth-bg.jpg') }}')"></div>
     <div class="av-inner">
       <div class="av-brand">
-        <span class="av-logo" style="color:#fff">{{ chart_mark('#5aa2ff') }}</span>
+        <span class="av-logo"><img src="{{ url_for('static', filename='images/brand/logo-mark.png') }}" alt="ACCOUNTING PRO logo"></span>
         <div class="av-wordmark">
           <strong>ACCOUNTING <em>PRO</em></strong>
           <small>Complete Computerized Accounting System</small>
@@ -65,7 +67,7 @@
   <!-- ============ right form panel ============ -->
   <section class="auth-form-side">
     <div class="auth-card">
-      <div class="ac-logo">{{ chart_mark('#ffffff') }}</div>
+      <div class="ac-logo ac-logo-img"><img src="{{ url_for('static', filename='images/brand/logo-mark.png') }}" alt="ACCOUNTING PRO logo"></div>
       <h1 class="ac-brand">ACCOUNTING PRO</h1>
       <p class="ac-sub">Professional Accounting Solution</p>
 

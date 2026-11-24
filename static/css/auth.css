@@ -59,6 +59,7 @@
   filter: drop-shadow(0 8px 18px rgba(37, 99, 235, .45));
 }
 .av-logo svg { width: 100%; height: 100%; }
+.av-logo img { width: 100%; height: 100%; object-fit: contain; }
 .av-wordmark { line-height: 1.05; }
 .av-wordmark strong {
   display: block;
@@ -167,6 +168,9 @@
   box-shadow: 0 18px 30px -18px rgba(29, 78, 216, .95), inset 0 1px 0 rgba(255, 255, 255, .45);
 }
 .ac-logo svg { width: 38px; height: 38px; color: #fff; }
+.ac-logo-img { background: none; box-shadow: none; }
+.ac-logo-img { width: 72px; height: 72px; }
+.ac-logo-img img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 12px 22px rgba(29, 78, 216, .28)); }
 .ac-brand {
   margin: 0;
   text-align: center;
