@@ -28,6 +28,51 @@ The app ships with support for both shapes:
 
 ---
 
+## Option 0 — Vercel + Turso (current live setup: free **and** persistent)
+
+Turso is hosted libSQL (SQLite over HTTPS), so the app keeps working with SQLite
+semantics while the **data survives** every serverless cold start, redeploy and
+scale-out. `config.py` switches to it automatically when `DATABASE_URL` is a
+`libsql://` URL — no code changes needed at deploy time.
+
+Environment variables to set in Vercel (Production **and** Preview):
+
+| Key | Value |
+|---|---|
+| `DATABASE_URL` | `libsql://<db>-<org>.aws-us-west-2.turso.io` |
+| `TURSO_AUTH_TOKEN` | the Turso database token |
+| `SECRET_KEY` | any long random string |
+| `ACCOUNTING_PRO_SEED_FROM_BUNDLE` | `0` (data lives in Turso, no need to ship the demo db) |
+
+Steps:
+
+1. Import the repo: <https://vercel.com/new> → **Import Git Repository** →
+   `accounting-pro3`.
+2. Framework preset: **Other**. Build command, output directory, root directory:
+   leave **empty**. (`vercel.json` handles routing: `/(.*)` → `/api/index`.)
+3. Add the four environment variables above, then **Deploy**.
+4. Open the URL — `/` (home) and `/login` should answer 200. Sign in with the
+   seeded demo account (`demo@accountingpro.local` / `Demo12345`) or register a
+   new business.
+
+Seeding / migrating the Turso database from a laptop or CI:
+
+```bash
+DATABASE_URL="libsql://...turso.io" TURSO_AUTH_TOKEN="..." python3 seed_demo.py
+```
+
+Notes:
+
+* Turso answers a plain `libsql://` connection with a `308` redirect, so the
+  dialect URL gets `?secure=true` appended automatically (`config.normalize_db_url`).
+* Uploads (business logo, attachments) still land on the function's `/tmp`; point
+  them at object storage if you need them to persist.
+* `sqlalchemy-libsql` is only imported when `DATABASE_URL` is a libSQL URL, so
+  local/Render/VM installs are unaffected.
+
+
+---
+
 ## Option A — Vercel (public demo link, ~3 minutes)
 
 Files already in the repo: `api/index.py` (WSGI entry point), `vercel.json`
