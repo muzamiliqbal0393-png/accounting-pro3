@@ -4,8 +4,8 @@ from datetime import datetime
 from extensions import db
 from models import Adjustment, AdjustmentLine, ADJUSTMENT_KINDS, money, ZERO
 from accounting.journal import (JournalError, build_lines, validate_balance,
-                                validate_accounts, parse_date, parse_amount,
-                                next_voucher_no)
+                                validate_accounts, validate_period, parse_date,
+                                parse_amount, next_voucher_no)
 
 #: Suggested debit/credit subcategories for each adjustment type.  The user
 #: always confirms the accounts - nothing is guessed silently.
@@ -35,11 +35,14 @@ def create_adjustment(business_id, user_id, data, raw_lines, status="posted",
     if Adjustment.query.filter_by(business_id=business_id, adj_no=adj_no).first():
         raise JournalError(f"Adjustment number '{adj_no}' already exists.")
 
+    adj_date = parse_date(data.get("adj_date"), "Adjustment date")
+    validate_period(business_id, adj_date, label="Adjustment")
+
     adj = Adjustment(
         business_id=business_id,
         period_id=period_id,
         adj_no=adj_no,
-        adj_date=parse_date(data.get("adj_date"), "Adjustment date"),
+        adj_date=adj_date,
         kind=data.get("kind") if data.get("kind") in ADJUSTMENT_KINDS else "Other",
         description=(data.get("description") or "")[:255],
         narration=(data.get("narration") or "").strip(),

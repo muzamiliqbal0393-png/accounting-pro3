@@ -1220,6 +1220,49 @@ def register_routes(app):
             flash(str(exc), "danger")
         return redirect(url_for("transaction_view", entry_id=entry.id))
 
+    @app.route("/transactions/<int:entry_id>/correct", methods=["GET", "POST"])
+    @business_required
+    def transaction_correct(entry_id):
+        """Alter a posted voucher: reverses the original and posts the correction."""
+        business = get_business()
+        entry = JournalEntry.query.filter_by(id=entry_id,
+                                            business_id=business.id).first_or_404()
+        if entry.status != "posted":
+            flash("Only posted vouchers can be corrected.", "warning")
+            return redirect(url_for("transaction_view", entry_id=entry.id))
+        accounts_list = (Account.query.filter_by(business_id=business.id, is_active=True)
+                         .order_by(Account.code).all())
+        if request.method == "POST":
+            rows = []
+            for i in range(1, max(21, len(entry.lines) + 6)):
+                rows.append({"account_id": request.form.get(f"account_id_{i}"),
+                             "debit": request.form.get(f"debit_{i}"),
+                             "credit": request.form.get(f"credit_{i}"),
+                             "description": request.form.get(f"description_{i}")})
+            data = {"entry_date": request.form.get("entry_date"),
+                    "entry_type": request.form.get("entry_type") or entry.entry_type,
+                    "description": request.form.get("description"),
+                    "narration": request.form.get("narration"),
+                    "reference": request.form.get("reference")}
+            try:
+                reversal, corrected = journal_engine.correct_entry(
+                    entry, current_user().id, data, rows)
+                audit("Transaction corrected", "JournalEntry", entry.id,
+                      previous={"voucher_no": entry.voucher_no},
+                      new={"reversal": reversal.voucher_no,
+                           "corrected": corrected.voucher_no})
+                flash(f"{entry.voucher_no} reversed by {reversal.voucher_no} and the "
+                      f"corrected voucher {corrected.voucher_no} posted. Every report "
+                      f"now shows the corrected figures.", "success")
+                return redirect(url_for("transaction_view", entry_id=corrected.id))
+            except (JournalError, ValueError) as exc:
+                db.session.flush()
+                db.session.rollback()
+                flash(str(exc), "danger")
+        return render_template("transaction_entry.html", accounts=accounts_list,
+                               form={}, entry=entry, suggested_no=entry.voucher_no,
+                               mode="correct", page_title=f"Correct {entry.voucher_no}")
+
     # -- reports -----------------------------------------------------------
     @app.route("/journal")
     @business_required
@@ -1502,7 +1545,13 @@ def register_routes(app):
         business = get_business()
         start, end = period_range()
         data = post_closing_trial_balance(business.id, start, end)
-        return render_template("post_closing_trial_balance.html", data=data)
+        drafts = (ClosingEntry.query
+                  .filter_by(business_id=business.id, status="draft")
+                  .filter(ClosingEntry.entry_date >= start,
+                          ClosingEntry.entry_date <= end)
+                  .order_by(ClosingEntry.entry_date).all())
+        return render_template("post_closing_trial_balance.html", data=data,
+                               draft_closings=drafts)
 
     @app.route("/cash-flow")
     @business_required

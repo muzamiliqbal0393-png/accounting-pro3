@@ -9,8 +9,8 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
 from extensions import db
-from models import (Account, JournalEntry, JournalLine, money, ZERO,
-                    ACTIVE_ENTRY_STATUS)
+from models import (Account, AccountingPeriod, JournalEntry, JournalLine, money,
+                    ZERO, ACTIVE_ENTRY_STATUS)
 
 
 class JournalError(Exception):
@@ -115,6 +115,34 @@ def validate_accounts(business_id, lines):
     return found
 
 
+def validate_period(business_id, entry_date, label="Transaction"):
+    """Reject a date that falls outside every accounting period of the business.
+
+    Books are kept period by period: a voucher dated outside the defined
+    periods (for example next year, or before the books start) would make the
+    trial balance and the statements meaningless, so it is refused with a
+    message that names the allowed ranges.
+    """
+    periods = AccountingPeriod.query.filter_by(business_id=business_id).all()
+    if not periods or entry_date is None:
+        return
+    if any(p.start_date <= entry_date <= p.end_date for p in periods):
+        return
+    def _describe(p):
+        span = f"{p.start_date:%d %b %Y} - {p.end_date:%d %b %Y}"
+        label = (p.label or "").strip()
+        # many period labels already contain the dates - do not repeat them
+        return label if (span in label or (p.start_date.strftime("%d %b %Y") in label
+                                           and p.end_date.strftime("%d %b %Y") in label)) \
+            else (f"{label} ({span})" if label else span)
+
+    ranges = ", ".join(_describe(p) for p in sorted(periods, key=lambda x: x.start_date))
+    raise JournalError(
+        f"{label} date {entry_date:%d %b %Y} is outside this business's accounting "
+        f"period(s): {ranges}. Pick a date inside the period or add a new period "
+        f"in Business Profile.")
+
+
 def create_entry(business_id, user_id, data, raw_lines, status="posted",
                  period_id=None, commit=True):
     """
@@ -134,6 +162,7 @@ def create_entry(business_id, user_id, data, raw_lines, status="posted",
         raise JournalError(f"Voucher number '{voucher_no}' already exists. "
                            "Voucher numbers must be unique.")
     entry_date = parse_date(data.get("entry_date"), "Transaction date")
+    validate_period(business_id, entry_date)
 
     entry = JournalEntry(
         business_id=business_id,
@@ -185,6 +214,7 @@ def update_draft(entry, data, raw_lines):
 
     entry.voucher_no = voucher_no
     entry.entry_date = parse_date(data.get("entry_date"), "Transaction date")
+    validate_period(entry.business_id, entry.entry_date)
     entry.entry_type = data.get("entry_type") or entry.entry_type
     entry.description = (data.get("description") or "")[:255]
     entry.narration = (data.get("narration") or "").strip()
@@ -215,6 +245,46 @@ def delete_draft(entry):
                            "Post a reversal entry to correct it.")
     db.session.delete(entry)
     db.session.commit()
+
+
+def correct_entry(entry, user_id, data, raw_lines):
+    """Correct a posted voucher without breaking the audit trail.
+
+    The original voucher is reversed by a mirror-image posted voucher and the
+    corrected figures are posted as a new voucher, so the ledger, trial balance
+    and every statement immediately reflect the correction while both the
+    original and the reversal stay visible in the books.
+    """
+    if entry.status != "posted":
+        raise JournalError("Only posted vouchers can be corrected. "
+                           "Edit the draft instead.")
+    if entry.reversal_of_id:
+        raise JournalError("A reversal voucher cannot be corrected; correct the "
+                           "original voucher instead.")
+    already = JournalEntry.query.filter_by(business_id=entry.business_id,
+                                          reversal_of_id=entry.id).first()
+    if already:
+        raise JournalError(f"{entry.voucher_no} was already reversed by "
+                           f"{already.voucher_no} and can no longer be corrected.")
+
+    # validate the corrected figures first, so a bad correction never reverses
+    # a good voucher
+    check_lines = build_lines(raw_lines)
+    validate_balance(check_lines)
+    validate_accounts(entry.business_id, check_lines)
+
+    reversal = reverse_entry(entry, user_id,
+                            reason=f"Correction of {entry.voucher_no}",
+                            reversal_date=entry.entry_date)
+
+    payload = dict(data)
+    payload["voucher_no"] = next_voucher_no(entry.business_id)
+    payload.setdefault("entry_type", entry.entry_type)
+    payload.setdefault("description", entry.description)
+    payload["entry_date"] = payload.get("entry_date") or entry.entry_date
+    corrected = create_entry(entry.business_id, user_id, payload, raw_lines,
+                            status="posted", period_id=entry.period_id)
+    return reversal, corrected
 
 
 def reverse_entry(entry, user_id, reason=None, reversal_date=None):

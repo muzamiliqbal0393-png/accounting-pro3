@@ -105,6 +105,20 @@ def create_closing_entry(business_id, user_id, start, end, entry_date=None,
     if not preview["is_balanced"]:
         raise JournalError("Closing entry preview does not balance; it cannot be saved.")
 
+    # --- no duplicate closing for the same period (req: no duplicate posting) --
+    existing = ClosingEntry.query.filter_by(business_id=business_id).all()
+    for other in existing:
+        if start and end and not (start <= other.entry_date <= end):
+            continue
+        if other.status == "posted":
+            raise JournalError(
+                f"Closing entries for this period are already posted as {other.entry_no} "
+                f"({other.entry_date:%d %b %Y}, net result Rs. {money(other.net_result):,}). "
+                "A period can be closed only once - delete nothing, the books are already closed.")
+        raise JournalError(
+            f"Closing entry {other.entry_no} for this period already exists as a draft. "
+            "Post it or delete the draft instead of creating a second closing entry.")
+
     entry = ClosingEntry(
         business_id=business_id,
         period_id=period_id,

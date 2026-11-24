@@ -252,12 +252,20 @@ def _post_closing_section(business, start, end):
             _money_col("debit", "Debit (Rs.)"), _money_col("credit", "Credit (Rs.)")]
     return {"type": "table", "title": "Post-Closing Trial Balance", "columns": cols,
             "rows": tb["rows"],
-            "totals": {"label": "Total", "debit": tb["total_debit"],
-                       "credit": tb["total_credit"]},
-            "status": "Balanced" if tb["is_balanced"] else "Not balanced",
-            "note": ("Temporary accounts still carry balances: "
-                     + ", ".join(r["name"] for r in tb["unclosed_temporary"]))
-                    if tb["unclosed_temporary"] else None}
+            "totals": {"label": "Total Debit / Total Credit",
+                       "debit": tb["total_debit"], "credit": tb["total_credit"]},
+            "status": ("Balanced (Dr = Cr)" if tb["is_balanced"]
+                       else f"Not Balanced - difference {tb['difference']}"),
+            "note": (("Total Debit " + f"{tb['total_debit']:,.2f}"
+                      + " / Total Credit " + f"{tb['total_credit']:,.2f}"
+                      + " / Difference " + f"{tb['difference']:,.2f}"
+                      + " | Temporary accounts still open: "
+                      + ", ".join(f"{r['code']} {r['name']}" for r in tb["unclosed_temporary"]))
+                     if tb["unclosed_temporary"] else
+                     ("Total Debit " + f"{tb['total_debit']:,.2f}"
+                      + " / Total Credit " + f"{tb['total_credit']:,.2f}"
+                      + " / Difference " + f"{tb['difference']:,.2f}"
+                      + " / Temporary accounts still open: 0 (all closed)"))}
 
 
 def _cash_flow_section(business, start, end):

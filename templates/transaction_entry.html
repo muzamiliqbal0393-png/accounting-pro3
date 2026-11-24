@@ -14,6 +14,14 @@
 {% endif %}
 
 <form method="post" enctype="multipart/form-data" id="journal-form">
+{% if mode == 'correct' %}
+  <div class="alert alert-info mb-3">
+    <strong>Correcting posted voucher {{ entry.voucher_no }}</strong> — when you post,
+    this voucher is reversed automatically and your corrected figures are saved as a new
+    voucher. The journal, ledger, trial balance, trading account, P&amp;L, balance sheet
+    and post-closing trial balance are all updated from the corrected entry.
+  </div>
+{% endif %}
   <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
   <div class="card mb-3">

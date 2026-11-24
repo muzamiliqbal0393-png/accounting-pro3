@@ -33,7 +33,7 @@
   </div>
   <div class="table-wrap">
     <table class="table table-stack align-middle">
-      <thead><tr><th>Code</th><th>Account Name</th><th>Category</th>
+      <thead><tr><th>Account Code</th><th>Account Name</th><th>Category</th>
         <th class="text-end">Debit (Rs.)</th><th class="text-end">Credit (Rs.)</th></tr></thead>
       <tbody>
         {% for r in data.rows %}
@@ -53,24 +53,58 @@
         {% endfor %}
       </tbody>
       <tfoot><tr class="row-total"><td colspan="3">Total</td>
-        <td class="num">{{ data.total_debit|rs }}</td>
-        <td class="num">{{ data.total_credit|rs }}</td></tr></tfoot>
+        <td class="num" data-label="Total Debit">{{ data.total_debit|rs }}</td>
+        <td class="num" data-label="Total Credit">{{ data.total_credit|rs }}</td></tr></tfoot>
     </table>
   </div>
   <div class="card-body">
     <div class="totals-strip">
+      <div class="item"><span>Total Debit:</span><strong>{{ data.total_debit|rs }}</strong></div>
+      <div class="item"><span>Total Credit:</span><strong>{{ data.total_credit|rs }}</strong></div>
       <div class="item"><span>Difference:</span>
         <strong class="{{ 'amount-pos' if data.difference == 0 else 'amount-neg' }}">{{ data.difference|rs }}</strong></div>
+      <div class="item"><span>Status:</span>
+        <strong class="{{ 'amount-pos' if data.is_balanced else 'amount-neg' }}">
+          {{ 'Balanced (Dr = Cr)' if data.is_balanced else 'Not Balanced' }}</strong></div>
       <div class="item"><span>Temporary accounts still open:</span>
-        <strong>{{ data.unclosed_temporary|length }}</strong></div>
+        <strong class="{{ 'amount-pos' if not data.unclosed_temporary else 'amount-neg' }}">
+          {{ data.unclosed_temporary|length }}</strong></div>
     </div>
+
     {% if data.unclosed_temporary %}
       <div class="alert alert-warning mt-3 mb-0">
-        These temporary accounts are not yet closed:
-        {% for r in data.unclosed_temporary %}
-          {{ r.code }} {{ r.name }} ({{ r.debit|rs if r.debit else r.credit|rs }}){{ '; ' if not loop.last }}
+        <strong>Temporary accounts still open</strong> — these revenue / expense balances
+        have not been transferred yet:
+        <ul class="mb-1 mt-1">
+          {% for r in data.unclosed_temporary %}
+            <li>{{ r.code }} {{ r.name }} ({{ r.category }}) —
+              Debit {{ r.debit|rs }} / Credit {{ r.credit|rs }}</li>
+          {% endfor %}
+        </ul>
+        <a href="{{ url_for('closing_entries_page') }}">Prepare and post the closing entries</a>
+        — the post-closing trial balance shows permanent accounts only once every
+        revenue and expense account is closed.
+      </div>
+    {% else %}
+      <div class="alert alert-success mt-3 mb-0">
+        All temporary accounts (Sales, Purchases, Carriage Inward, Wages, Salaries, Rent,
+        Electricity, Advertising, Trading A/c, Drawings) are closed. This statement shows
+        permanent accounts only, and Total Debit = Total Credit = {{ data.total_debit|rs }}.
+      </div>
+    {% endif %}
+
+    {% if draft_closings %}
+      <div class="alert alert-warning mt-3 mb-0 no-print">
+        <strong>Draft closing entry found:</strong>
+        {% for e in draft_closings %}{{ e.entry_no }} ({{ e.entry_date }}, net {{ e.net_result|rs }})
         {% endfor %}
-        — <a href="{{ url_for('closing_entries_page') }}">post closing entries</a>.
+        — a draft closing entry is <em>not</em> posted, so the accounts above still include
+        the temporary balances and the totals will not match. Post it to complete the closing:
+        <form method="post" action="{{ url_for('closing_post', closing_id=draft_closings[0].id) }}"
+              class="d-inline">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm btn-primary">Post it now</button>
+        </form>
       </div>
     {% endif %}
   </div>

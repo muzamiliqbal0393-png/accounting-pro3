@@ -99,8 +99,13 @@
           </form>
         {% elif entry.status == 'posted' and not reversal %}
           <div class="alert alert-info py-2 px-3 mb-2" style="font-size:12px">
-            Posted vouchers are locked for audit. To correct one, post a reversal entry.
+            Posted vouchers are locked for audit. To change one, use
+            <strong>Correct this voucher</strong> — the system posts a reversal and a
+            corrected voucher, and every report updates itself.
           </div>
+          <a class="btn btn-ghost w-100 mb-2"
+             href="{{ url_for('transaction_correct', entry_id=entry.id) }}">
+            {{ icon('edit') }} Correct this voucher</a>
           <form method="post" action="{{ url_for('transaction_reverse', entry_id=entry.id) }}"
                 data-confirm="Post a reversal entry for {{ entry.voucher_no }}?">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">

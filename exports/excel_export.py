@@ -350,11 +350,26 @@ def _post_closing_sheet(wb, business, start, end):
     tb = post_closing_trial_balance(business.id, start, end)
     rows = [{"Code": r["code"], "Account Name": r["name"], "Category": r["category"],
              "Debit": r["debit"], "Credit": r["credit"]} for r in tb["rows"]]
-    _sheet(wb, "Post-Closing TB", ["Code", "Account Name", "Category", "Debit", "Credit"],
+    rows.append({"Code": "", "Account Name": "Total Debit", "Category": "",
+                 "Debit": tb["total_debit"], "Credit": None})
+    rows.append({"Code": "", "Account Name": "Total Credit", "Category": "",
+                 "Debit": None, "Credit": tb["total_credit"]})
+    rows.append({"Code": "", "Account Name": "Difference", "Category": "",
+                 "Debit": tb["difference"], "Credit": None})
+    rows.append({"Code": "", "Account Name": "Balanced status", "Category": "",
+                 "Debit": "Balanced" if tb["is_balanced"] else "Not Balanced",
+                 "Credit": None})
+    rows.append({"Code": "", "Account Name": "Temporary accounts still open", "Category": "",
+                 "Debit": (", ".join(f"{r['code']} {r['name']}"
+                                     for r in tb["unclosed_temporary"])
+                           or "0 (all closed)"),
+                 "Credit": None})
+    _sheet(wb, "Post-Closing TB",
+           ["Account Code", "Account Name", "Category", "Debit (Rs.)", "Credit (Rs.)"],
            rows, money_cols=(4, 5), title_text="Post-Closing Trial Balance",
            total_row={"Code": "", "Account Name": "Total", "Category": "",
                       "Debit": tb["total_debit"], "Credit": tb["total_credit"]},
-           widths=[12, 40, 16, 18, 18])
+           widths=[14, 40, 16, 18, 18])
 
 
 def _annual_sheet(wb, business, start, end):
