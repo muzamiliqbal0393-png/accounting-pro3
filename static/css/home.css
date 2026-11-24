@@ -51,9 +51,9 @@
 /* ------------------------------ navigation ------------------------------ */
 .hp-nav {
   position: sticky; top: 0; z-index: 60;
-  background: rgba(12, 22, 45, .92);
-  border-bottom: 1px solid rgba(255, 255, 255, .09);
-  backdrop-filter: saturate(150%) blur(10px);
+  /* same solid navy as the hero so the two never read as different colours */
+  background: #101D3A;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
 }
 .hp-nav-inner {
   max-width: 1200px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 28px);
@@ -66,9 +66,11 @@
   box-shadow: 0 6px 16px -8px rgba(36, 87, 214, .9);
 }
 .hp-brand-logo {
-  width: 44px; height: 44px;
-  background: transparent; box-shadow: none; object-fit: contain; padding: 0;
-  filter: drop-shadow(0 4px 12px rgba(9, 23, 46, .5));
+  /* the mark is navy-on-navy on this dark navbar: give it a light chip */
+  width: auto; height: 38px; padding: 4px 6px;
+  background: #fff; border-radius: 10px;
+  object-fit: contain;
+  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, .6);
 }
 .hp-brand-text { display: grid; line-height: 1.15; }
 .hp-brand-text strong { color: #fff; font-size: 14px; letter-spacing: .06em; }
@@ -126,12 +128,12 @@
   position: absolute; inset: 0; z-index: 1; pointer-events: none;
   background:
     linear-gradient(100deg,
-      rgba(8, 17, 36, .96) 0%,
-      rgba(10, 22, 46, .92) 32%,
-      rgba(13, 27, 55, .72) 52%,
-      rgba(13, 27, 55, .30) 76%,
-      rgba(13, 27, 55, .14) 100%),
-    linear-gradient(180deg, rgba(8, 17, 36, .55) 0%, rgba(8, 17, 36, 0) 32%);
+      rgba(16, 29, 58, .90) 0%,
+      rgba(16, 29, 58, .80) 30%,
+      rgba(16, 29, 58, .48) 52%,
+      rgba(16, 29, 58, .18) 76%,
+      rgba(16, 29, 58, .06) 100%),
+    linear-gradient(180deg, rgba(16, 29, 58, .35) 0%, rgba(16, 29, 58, 0) 30%);
 }
 .hero-inner {
   position: relative; z-index: 2; width: 100%;
@@ -354,7 +356,7 @@
   .hp-links {
     position: absolute; top: 70px; left: 0; right: 0; margin: 0;
     flex-direction: column; align-items: stretch; gap: 2px;
-    background: #0a1428; border-bottom: 1px solid rgba(255, 255, 255, .12);
+    background: #101D3A; border-bottom: 1px solid rgba(255, 255, 255, .12);
     box-shadow: 0 22px 40px -20px rgba(0, 0, 0, .8);
     padding: 10px clamp(16px, 4vw, 28px) 18px;
     max-height: 0; overflow: hidden; opacity: 0; visibility: hidden;
@@ -371,8 +373,8 @@
   .hero-slide img { object-position: 72% center; }
   .hero-overlay {
     background:
-      linear-gradient(180deg, rgba(8, 17, 36, .93) 0%, rgba(9, 19, 40, .90) 45%,
-                              rgba(10, 21, 44, .78) 70%, rgba(10, 21, 44, .55) 100%);
+      linear-gradient(180deg, rgba(16, 29, 58, .90) 0%, rgba(16, 29, 58, .82) 45%,
+                              rgba(16, 29, 58, .62) 70%, rgba(16, 29, 58, .38) 100%);
   }
   .hero-inner { padding-top: 54px; padding-bottom: 74px; }
   .hero h1 { font-size: clamp(1.85rem, 6.6vw, 2.5rem); }
