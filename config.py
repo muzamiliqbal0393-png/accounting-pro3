@@ -49,6 +49,38 @@ def prepare_data_dir():
     return target
 
 
+# ---------------------------------------------------------------------------
+# Hosted libSQL / Turso support (optional, env-driven)
+# ---------------------------------------------------------------------------
+# When DATABASE_URL points at a hosted libSQL database (Turso) the driver is
+# ``sqlalchemy-libsql``; SQLAlchemy needs the URL rewritten to
+# ``sqlite+libsql://...`` and the auth token passed as a connect argument.
+# Nothing changes for the normal local/VM SQLite install.
+RAW_DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "sqlite:///" + os.path.join(DATA_DIR, DB_FILENAME),
+).strip()
+
+TURSO_AUTH_TOKEN = (os.environ.get("TURSO_AUTH_TOKEN")
+                    or os.environ.get("DATABASE_AUTH_TOKEN")
+                    or "")
+
+
+def normalize_db_url(url):
+    """Map hosted libSQL URLs onto the SQLAlchemy libsql dialect."""
+    if url.startswith("libsql://"):
+        return "sqlite+libsql://" + url[len("libsql://"):]
+    if url.startswith(("https://", "http://")) and ".turso." in url:
+        return "sqlite+libsql://" + url.split("://", 1)[1]
+    return url
+
+
+DATABASE_URI = normalize_db_url(RAW_DATABASE_URL)
+IS_REMOTE_DB = DATABASE_URI.startswith("sqlite+libsql://")
+ENGINE_OPTIONS = ({"connect_args": {"auth_token": TURSO_AUTH_TOKEN}}
+                  if IS_REMOTE_DB and TURSO_AUTH_TOKEN else {})
+
+
 class Config:
     """Base configuration shared by every environment."""
 
@@ -59,10 +91,8 @@ class Config:
     PERMANENT_SESSION_LIFETIME = 60 * 60 * 8  # 8 hours
 
     # --- Database -------------------------------------------------------
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DATABASE_URL",
-        "sqlite:///" + os.path.join(DATA_DIR, DB_FILENAME),
-    )
+    SQLALCHEMY_DATABASE_URI = DATABASE_URI
+    SQLALCHEMY_ENGINE_OPTIONS = ENGINE_OPTIONS
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- Uploads --------------------------------------------------------
@@ -89,6 +119,7 @@ class TestConfig(Config):
     TESTING = True
     WTF_CSRF_ENABLED = False
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_ENGINE_OPTIONS = {}
     SERVER_NAME = "localhost"
 
 
