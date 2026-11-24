@@ -1,4 +1,6 @@
 {% from 'partials/icons.html' import icon %}
+{% set notif_total = notifications.total if notifications is defined and notifications else 0 %}
+{% set notif_items = notifications['items'] if notifications is defined and notifications else [] %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -104,20 +106,57 @@
         <h1>{% block page_title %}Dashboard{% endblock %}</h1>
       </div>
       <div class="topbar-actions">
-        <form method="post" action="{{ url_for('set_period') }}" class="d-none d-lg-flex align-items-end gap-2">
-          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-          <div>
-            <label class="form-label mb-0" style="font-size:10px">Period from</label>
-            <input type="date" name="start" class="form-control form-control-sm" value="{{ period_start }}">
+        <div class="topbar-search">
+          <form method="get" action="{{ url_for('search') }}" role="search">
+            <span class="search-ico">{{ icon('search') }}</span>
+            <input type="search" name="q" id="globalSearch" autocomplete="off"
+                   value="{{ request.args.get('q', '') if request.endpoint == 'search' else '' }}"
+                   placeholder="Search&hellip;" aria-label="Global search"
+                   title="Search accounts, vouchers and products (Ctrl+K)">
+            <span class="kbd-hint">Ctrl K</span>
+          </form>
+        </div>
+        <div class="dropdown fy-pill-wrap d-none d-xl-flex">
+          <button class="fy-pill" type="button" data-bs-toggle="dropdown" aria-label="Accounting period">
+            <span class="fy-ico">{{ icon('calendar') }}</span>
+            <span class="fy-meta">
+              <small>Accounting period</small>
+              <span class="fy-range">{{ period_start }} &ndash; {{ period_end }}</span>
+            </span>
+            <span class="fy-caret">{{ icon('arrow-down') }}</span>
+          </button>
+          <div class="dropdown-menu dropdown-menu-end p-3" style="min-width:260px">
+            <form method="post" action="{{ url_for('set_period') }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <div class="mb-2">
+                <label class="form-label mb-1" style="font-size:11px">Period from</label>
+                <input type="date" name="start" class="form-control form-control-sm" value="{{ period_start }}">
+              </div>
+              <div class="mb-2">
+                <label class="form-label mb-1" style="font-size:11px">Period to</label>
+                <input type="date" name="end" class="form-control form-control-sm" value="{{ period_end }}">
+              </div>
+              <button class="btn btn-sm btn-primary w-100" type="submit">{{ icon('check') }} Apply period</button>
+            </form>
           </div>
-          <div>
-            <label class="form-label mb-0" style="font-size:10px">to</label>
-            <input type="date" name="end" class="form-control form-control-sm" value="{{ period_end }}">
-          </div>
-          <button class="btn btn-sm btn-ghost" type="submit" title="Apply period">{{ icon('check') }}</button>
-        </form>
+        </div>
         <a class="btn btn-sm btn-primary btn-icon d-none d-md-inline-flex"
            href="{{ url_for('transaction_new') }}">{{ icon('plus') }} New Voucher</a>
+        <div class="dropdown bell-wrap">
+          <button class="bell-btn" type="button" data-bs-toggle="dropdown"
+                  aria-label="Notifications{% if notif_total %} ({{ notif_total }} pending){% endif %}">
+            {{ icon('bell') }}
+            {% if notif_total %}<span class="bell-count">{{ notif_total if notif_total < 100 else '99+' }}</span>{% endif %}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end notif-menu">
+            <li class="notif-head">Pending items ({{ notif_total }})</li>
+            {% for n in notif_items %}
+            <li><a class="dropdown-item" href="{{ n.url }}">{{ icon(n.icon) }}<span>{{ n.label }}</span></a></li>
+            {% else %}
+            <li><div class="notif-empty">Nothing pending &mdash; every voucher is posted.</div></li>
+            {% endfor %}
+          </ul>
+        </div>
         <div class="dropdown">
           <button class="btn btn-sm btn-ghost dropdown-toggle" type="button" data-bs-toggle="dropdown">
             {{ current_user.name.split(' ')[0] }}
@@ -171,5 +210,6 @@
 <script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 {% block scripts %}{% endblock %}
+<script src="{{ url_for('static', filename='js/app-shell.js') }}"></script>
 </body>
 </html>

@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% block title %}Search{% endblock %}
+{% block page_title %}Search{% endblock %}
+{% block crumb %}Search across accounts, vouchers and products{% endblock %}
+
+{% block content %}
+<div class="search-hero">
+  <h2>Global search</h2>
+  <p>Find any account, voucher or product in {{ business.name or 'your business' }}.
+    Shortcut: <strong>Ctrl</strong> + <strong>K</strong> from any page.</p>
+  <form method="get" action="{{ url_for('search') }}" role="search">
+    <input type="search" name="q" value="{{ q }}" placeholder="Account code, voucher no, description, product…"
+           autofocus aria-label="Search query">
+    <button class="btn btn-primary btn-icon" type="submit">{{ icon('search') }} Search</button>
+  </form>
+</div>
+
+{% if q|length < 2 %}
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <div class="stat-label justify-content-center mb-2">{{ icon('search') }} Start typing</div>
+      <p class="hint mb-0">Type at least 2 characters to search accounts, vouchers and products.</p>
+    </div>
+  </div>
+{% else %}
+  <div class="totals-strip mb-3">
+    <div class="item"><span>Query:</span><strong>{{ q }}</strong></div>
+    <div class="item"><span>Results:</span><strong>{{ total }}</strong></div>
+    <div class="item"><span>Accounts:</span><strong>{{ accounts_found|length }}</strong></div>
+    <div class="item"><span>Vouchers:</span><strong>{{ vouchers_found|length }}</strong></div>
+    <div class="item"><span>Products:</span><strong>{{ products_found|length }}</strong></div>
+  </div>
+
+  {% if total == 0 %}
+    <div class="card">
+      <div class="card-body text-center py-5">
+        <div class="stat-label justify-content-center mb-2">{{ icon('alert') }} Nothing found</div>
+        <p class="hint mb-0">No account, voucher or product matches &ldquo;{{ q }}&rdquo;.</p>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if accounts_found %}
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3>Chart of Accounts</h3><span class="spacer"></span>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('accounts') }}">Open accounts</a>
+    </div>
+    <div class="table-wrap">
+      <table class="table table-stack align-middle">
+        <thead><tr><th>Code</th><th>Account</th><th>Type</th><th>Sub-category</th></tr></thead>
+        <tbody>
+        {% for a in accounts_found %}
+          <tr>
+            <td data-label="Code">{{ a.code }}</td>
+            <td data-label="Account"><a href="{{ url_for('ledger', account_id=a.id) }}">{{ a.name }}</a></td>
+            <td data-label="Type">{{ a.category }}</td>
+            <td data-label="Sub-category" class="hint">{{ a.subcategory_label or '—' }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if vouchers_found %}
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3>Vouchers</h3><span class="spacer"></span>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('transactions') }}">Open vouchers</a>
+    </div>
+    <div class="table-wrap">
+      <table class="table table-stack align-middle">
+        <thead><tr><th>Date</th><th>Voucher</th><th>Type</th><th>Description</th><th class="text-end">Amount</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for e in vouchers_found %}
+          <tr>
+            <td data-label="Date">{{ e.entry_date|dt }}</td>
+            <td data-label="Voucher"><a href="{{ url_for('transaction_view', entry_id=e.id) }}">{{ e.voucher_no }}</a></td>
+            <td data-label="Type" class="hint">{{ e.entry_type }}</td>
+            <td data-label="Description">{{ e.description or '—' }}</td>
+            <td class="num" data-label="Amount">{{ e.total_debit|rs }}</td>
+            <td data-label="Status">{{ e.status|capitalize }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if products_found %}
+  <div class="card">
+    <div class="card-header">
+      <h3>Products</h3><span class="spacer"></span>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('products') }}">Open products</a>
+    </div>
+    <div class="table-wrap">
+      <table class="table table-stack align-middle">
+        <thead><tr><th>Code</th><th>Product</th><th class="text-end">Selling price</th><th class="text-end">Purchase cost</th></tr></thead>
+        <tbody>
+        {% for p in products_found %}
+          <tr>
+            <td data-label="Code">{{ p.code or '—' }}</td>
+            <td data-label="Product">{{ p.name }}</td>
+            <td class="num" data-label="Selling price">{{ p.selling_price|rs }}</td>
+            <td class="num" data-label="Purchase cost">{{ p.purchase_cost|rs }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+{% endif %}
+{% endblock %}

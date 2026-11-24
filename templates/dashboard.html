@@ -7,34 +7,46 @@
 
 {% block content %}
 
-<!-- ============ summary cards ============ -->
-<div class="row g-3 mb-3">
-  {% set cards = [
-    ('Total Income', summary.total_income, 'tone-income', 'trending', 'Net sales + other income'),
-    ('Total Expenses', summary.total_expenses, 'tone-expense', 'activity', 'Direct + indirect expenses'),
-    ('Total Assets', summary.total_assets, 'tone-asset', 'briefcase', 'Balance sheet assets'),
-    ('Total Liabilities', summary.total_liabilities, 'tone-liability', 'scale', 'Payables, loans & accruals'),
-    ("Owner's Capital", summary.owner_capital, 'tone-equity', 'user', 'Capital + retained result'),
-    ('Gross Profit', summary.gross_profit if summary.is_gross_profit else -summary.gross_loss,
-      'tone-income' if summary.is_gross_profit else 'tone-expense', 'chart',
-      'Trading account result'),
-    ('Net Profit / (Loss)', summary.net_profit if summary.is_profit else -summary.net_loss,
-      'tone-income' if summary.is_profit else 'tone-expense', 'pie',
-      'Profit & loss result'),
-    ('Cash Balance', summary.cash_balance, 'tone-cash', 'wallet', 'Cash in hand + bank'),
-    ('Accounts Receivable', summary.receivable, 'tone-asset', 'user', 'Debtors outstanding'),
-    ('Accounts Payable', summary.payable, 'tone-liability', 'users', 'Creditors outstanding')
-  ] %}
-  {% for label, value, tone, ico, sub in cards %}
-  <div class="col-6 col-md-4 col-xl-3 col-xxl-2 stat-col">
-    <div class="stat-card {{ tone }}">
-      <div class="stat-icon">{{ icon(ico) }}</div>
-      <div class="stat-label">{{ label }}</div>
-      <div class="stat-value {{ 'neg' if value|neg }}">{{ value|rs }}</div>
-      <div class="stat-sub">{{ sub }}</div>
-    </div>
+{% set gp = summary.gross_profit if summary.is_gross_profit else -summary.gross_loss %}
+{% set np = summary.net_profit if summary.is_profit else -summary.net_loss %}
+
+<!-- ============ welcome header + primary actions ============ -->
+<div class="dash-hero mb-3">
+  <div>
+    <h2>Welcome Back, {{ user_first_name }}!</h2>
+    <p>Here is your financial overview for {{ period_label }} · {{ business.name or 'Your business' }}</p>
   </div>
-  {% endfor %}
+  <div class="dash-actions">
+    <a class="btn btn-hero-primary btn-icon" href="{{ url_for('transaction_new') }}">
+      {{ icon('plus') }} Add Transaction</a>
+    <div class="dropdown">
+      <button class="btn btn-hero-ghost dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        {{ icon('file-text') }} Reports</button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="{{ url_for('trial_balance_page') }}">Trial Balance</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('trading_account_page') }}">Trading Account</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('profit_loss_page') }}">Profit &amp; Loss</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('balance_sheet_page') }}">Balance Sheet</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('cash_flow_page') }}">Cash Flow Statement</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('ledger') }}">General Ledger</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="{{ url_for('export_center') }}">All reports &amp; exports</a></li>
+      </ul>
+    </div>
+    <div class="dropdown">
+      <button class="btn btn-hero-ghost dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        {{ icon('download') }} Export</button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="{{ url_for('export_report', fmt='pdf', report_name='full_project') }}">Complete file · PDF</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('export_full', fmt='word') }}">Complete file · Word</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('export_full', fmt='excel') }}">Complete file · Excel</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="{{ url_for('export_center') }}">Export Center</a></li>
+      </ul>
+    </div>
+    <a class="btn btn-hero-ghost btn-icon" href="{{ url_for('import_center') }}">
+      {{ icon('upload') }} Import</a>
+  </div>
 </div>
 
 {% if not summary.has_data %}
@@ -49,37 +61,205 @@
 </div>
 {% endif %}
 
-<!-- ============ quick actions ============ -->
-<div class="card mb-3">
-  <div class="card-body tight d-flex flex-wrap align-items-center gap-2">
-    <span class="hint me-2" style="font-weight:600">Quick actions</span>
-    <div class="quick-actions">
-      <a class="quick-action" href="{{ url_for('transaction_new') }}">{{ icon('plus') }} New Voucher</a>
-      <a class="quick-action" href="{{ url_for('adjustment_new') }}">{{ icon('sliders') }} New Adjustment</a>
-      <a class="quick-action" href="{{ url_for('journal') }}">{{ icon('book') }} Journal</a>
-      <a class="quick-action" href="{{ url_for('trial_balance_page') }}">{{ icon('scale') }} Trial Balance</a>
-      <a class="quick-action" href="{{ url_for('profit_loss_page') }}">{{ icon('trending') }} P&amp;L</a>
-      <a class="quick-action" href="{{ url_for('balance_sheet_page') }}">{{ icon('briefcase') }} Balance Sheet</a>
-      <a class="quick-action" href="{{ url_for('export_center') }}">{{ icon('download') }} Export</a>
+<!-- ============ KPI cards ============ -->
+{% set cards = [
+  ('Total Income', summary.total_income, 'kpi-g-blue', 'trending', 'total_income', 'Net sales + other income'),
+  ('Total Expenses', summary.total_expenses, 'kpi-g-amber', 'activity', 'total_expenses', 'COGS + operating expenses'),
+  ('Total Assets', summary.total_assets, 'kpi-g-teal', 'briefcase', none, 'Balance sheet assets'),
+  ('Total Liabilities', summary.total_liabilities, 'kpi-g-orange', 'scale', none, 'Payables, loans & accruals'),
+  ("Owner's Capital", summary.owner_capital, 'kpi-g-purple', 'user', none, 'Capital + retained result'),
+  ('Gross Profit', gp, 'kpi-g-green' if summary.is_gross_profit else 'kpi-g-red', 'chart', 'gross_profit', 'Trading account result'),
+  ('Net Profit / (Loss)', np, 'kpi-g-green' if summary.is_profit else 'kpi-g-red', 'pie', 'net_profit', 'Profit & loss result'),
+  ('Cash Balance', summary.cash_balance, 'kpi-g-cyan', 'wallet', 'cash_balance', 'Cash in hand + bank'),
+  ('Accounts Receivable', summary.receivable, 'kpi-g-indigo', 'user', 'receivable', 'Debtors outstanding'),
+  ('Accounts Payable', summary.payable, 'kpi-g-slate', 'users', 'payable', 'Creditors outstanding')
+] %}
+<div class="row g-3 mb-3">
+  {% for label, value, grad, ico, gkey, sub in cards %}
+  <div class="col-6 col-md-4 col-xl-4 col-xxl-2">
+    <div class="kpi {{ grad }}">
+      <div class="kpi-top">
+        <span class="kpi-ico">{{ icon(ico) }}</span>
+        <span class="kpi-label">{{ label }}</span>
+      </div>
+      <div class="kpi-value">{{ value|rs }}</div>
+      <div class="kpi-foot">
+        {% set g = growth[gkey] if gkey and gkey in growth else none %}
+        {% if g is not none %}
+          <span class="chip">
+            {{ icon('arrow-up' if g >= 0 else 'arrow-down') }}{{ (g|float)|abs|round(1) }}%
+          </span>
+          <span>vs previous period</span>
+        {% else %}
+          <span>{{ sub }}</span>
+        {% endif %}
+      </div>
     </div>
   </div>
+  {% endfor %}
 </div>
 
-<!-- ============ charts ============ -->
+<!-- ============ analysis: expense breakdown + monthly performance ============ -->
 <div class="row g-3 mb-3">
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">
+        <h3>Expense Analysis</h3>
+        <span class="spacer"></span>
+        <span class="hint">{{ period_label }}</span>
+      </div>
+      <div class="card-body">
+        {% if expense_breakdown %}
+        <div style="position:relative">
+          <div class="chart-box lg"><canvas id="chartExpenses"></canvas></div>
+          <div style="position:absolute;inset:0;display:grid;place-content:center;text-align:center;pointer-events:none">
+            <div style="font-size:1.25rem;font-weight:750;color:var(--navy);line-height:1.1">
+              {{ (expense_breakdown[0].percent|float)|round(0)|int }}%</div>
+            <div class="hint" style="font-size:10.5px">{{ expense_breakdown[0].label }}</div>
+          </div>
+        </div>
+        <ul class="list-unstyled mt-2 mb-0">
+          {% for row in expense_breakdown %}
+          <li class="d-flex align-items-center justify-content-between py-1"
+              style="border-bottom:1px solid var(--line);font-size:12.5px">
+            <span><span class="hint">{{ loop.index }}.</span> {{ row.label }}</span>
+            <span class="text-end">
+              <strong>{{ row.amount|rs }}</strong>
+              <span class="hint"> · {{ (row.percent|float)|round(0)|int }}%</span>
+            </span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+          {{ empty_state('No expenses in this period',
+                         'Expense accounts with a debit balance will be broken down here.',
+                         'pie', url_for('transaction_new'), 'Record a voucher') }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
   <div class="col-lg-8">
     <div class="card h-100">
       <div class="card-header">
-        <h3>Monthly Income vs Expenses vs Profit</h3>
+        <h3>Monthly Performance</h3>
         <span class="spacer"></span>
-        <span class="hint">{{ period_label }}</span>
+        <a class="btn btn-sm btn-ghost" href="{{ url_for('analysis_page') }}">Full analysis</a>
       </div>
       <div class="card-body">
         <div class="chart-box lg"><canvas id="chartMonthly"></canvas></div>
       </div>
     </div>
   </div>
-  <div class="col-lg-4">
+</div>
+
+<!-- ============ business summary strip ============ -->
+<div class="summary-strip mb-3">
+  <div>
+    <div class="s-label">Total Sales</div>
+    <div class="s-value">{{ summary.trading.net_sales|rs }}</div>
+    <div class="s-note">Net of returns &amp; discounts</div>
+  </div>
+  <div>
+    <div class="s-label">Total Expenses</div>
+    <div class="s-value">{{ summary.total_expenses|rs }}</div>
+    <div class="s-note">COGS + operating</div>
+  </div>
+  <div>
+    <div class="s-label">Gross Profit</div>
+    <div class="s-value">{{ gp|rs }}</div>
+    <div class="s-note">{{ 'Profit' if summary.is_gross_profit else 'Loss' }} on trading</div>
+  </div>
+  <div>
+    <div class="s-label">Net {{ 'Profit' if summary.is_profit else 'Loss' }}</div>
+    <div class="s-value">{{ np|rs }}</div>
+    <div class="s-note">After all expenses</div>
+  </div>
+  <div>
+    {% if growth.get('net_profit') is not none %}
+      <div class="s-label">Net profit growth</div>
+      <span class="growth-badge">
+        {{ icon('arrow-up' if growth.net_profit >= 0 else 'arrow-down') }}
+        {{ (growth.net_profit|float)|abs|round(1) }}% vs previous period
+      </span>
+    {% else %}
+      <div class="s-label">Comparison</div>
+      <span class="growth-badge warn">
+        {{ icon('info') }} No comparison data available
+      </span>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ============ financial reports + quick export ============ -->
+<div class="row g-3 mb-3">
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header">
+        <h3>Financial Reports</h3>
+        <span class="spacer"></span>
+        <span class="hint">All periods: {{ period_label }}</span>
+      </div>
+      <div class="card-body">
+        <div class="tile-grid">
+          <a class="tile" href="{{ url_for('trial_balance_page') }}">
+            <span class="tile-ico">{{ icon('scale') }}</span>Trial Balance</a>
+          <a class="tile t-amber" href="{{ url_for('trading_account_page') }}">
+            <span class="tile-ico">{{ icon('chart') }}</span>Trading Account</a>
+          <a class="tile t-green" href="{{ url_for('profit_loss_page') }}">
+            <span class="tile-ico">{{ icon('trending') }}</span>Profit &amp; Loss</a>
+          <a class="tile t-purple" href="{{ url_for('balance_sheet_page') }}">
+            <span class="tile-ico">{{ icon('briefcase') }}</span>Balance Sheet</a>
+          <a class="tile t-teal" href="{{ url_for('cash_flow_page') }}">
+            <span class="tile-ico">{{ icon('activity') }}</span>Cash Flow</a>
+          <a class="tile" href="{{ url_for('ledger') }}">
+            <span class="tile-ico">{{ icon('book') }}</span>General Ledger</a>
+          <a class="tile t-green" href="{{ url_for('adjusted_trial_balance_page') }}">
+            <span class="tile-ico">{{ icon('sliders') }}</span>Adjusted TB</a>
+          <a class="tile t-amber" href="{{ url_for('closing_entries_page') }}">
+            <span class="tile-ico">{{ icon('lock') }}</span>Closing Entries</a>
+          <a class="tile t-purple" href="{{ url_for('analysis_page') }}">
+            <span class="tile-ico">{{ icon('target') }}</span>Annual Analysis</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header">
+        <h3>Quick Export</h3>
+        <span class="spacer"></span>
+        <span class="hint">{{ period_label }}</span>
+      </div>
+      <div class="card-body">
+        <a class="export-row" href="{{ url_for('export_report', fmt='pdf', report_name='full_project') }}">
+          <span class="fmt pdf">PDF</span> Complete accounting file
+          <span class="go">{{ icon('arrow-right') }}</span></a>
+        <a class="export-row" href="{{ url_for('export_full', fmt='word') }}">
+          <span class="fmt word">DOC</span> Word document
+          <span class="go">{{ icon('arrow-right') }}</span></a>
+        <a class="export-row" href="{{ url_for('export_full', fmt='excel') }}">
+          <span class="fmt excel">XLS</span> Excel workbook (17 sheets)
+          <span class="go">{{ icon('arrow-right') }}</span></a>
+        <a class="export-row" href="{{ url_for('export_center') }}">
+          <span class="fmt all">ALL</span> Export Center
+          <span class="go">{{ icon('arrow-right') }}</span></a>
+        <div class="totals-strip mt-2">
+          <div class="item"><span>Statement check:</span>
+            <span class="{{ 'amount-pos' if summary.bs.is_balanced else 'amount-neg' }}">
+              Balance sheet {{ 'balances' if summary.bs.is_balanced else 'does not balance' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ product performance ============ -->
+<div class="row g-3 mb-3">
+  <div class="col-lg-5">
     <div class="card h-100">
       <div class="card-header"><h3>Product Performance</h3></div>
       <div class="card-body">
@@ -89,6 +269,22 @@
           {{ empty_state('No product data', 'Add products and record sales to see performance here.',
                          'box', url_for('products'), 'Manage products') }}
         {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-body tight">
+        <div class="hint mb-2" style="font-weight:600">Quick actions</div>
+        <div class="quick-actions">
+          <a class="quick-action" href="{{ url_for('transaction_new') }}">{{ icon('plus') }} New Voucher</a>
+          <a class="quick-action" href="{{ url_for('adjustment_new') }}">{{ icon('sliders') }} New Adjustment</a>
+          <a class="quick-action" href="{{ url_for('journal') }}">{{ icon('book') }} Journal</a>
+          <a class="quick-action" href="{{ url_for('trial_balance_page') }}">{{ icon('scale') }} Trial Balance</a>
+          <a class="quick-action" href="{{ url_for('profit_loss_page') }}">{{ icon('trending') }} P&amp;L</a>
+          <a class="quick-action" href="{{ url_for('balance_sheet_page') }}">{{ icon('briefcase') }} Balance Sheet</a>
+          <a class="quick-action" href="{{ url_for('export_center') }}">{{ icon('download') }} Export</a>
+        </div>
       </div>
     </div>
   </div>
@@ -238,11 +434,9 @@
           </div>
         </div>
         <div class="totals-strip mt-3">
-          <div class="item"><span>Statement check:</span>
-            <span class="{{ 'amount-pos' if summary.bs.is_balanced else 'amount-neg' }}">
-              Balance sheet {{ 'balances' if summary.bs.is_balanced else 'does not balance' }}
-              {% if not summary.bs.is_balanced %}(difference {{ summary.bs.difference|rs }}){% endif %}
-            </span>
+          <div class="item"><span>Previous period:</span>
+            <strong>{{ previous_label }}</strong>
+            <span class="hint">{{ 'compared above' if previous.has_data else 'no data — growth chips hidden' }}</span>
           </div>
         </div>
       </div>
@@ -277,6 +471,31 @@ const DATA = {{ chart_data|tojson }};
       interaction: { mode: "index", intersect: false },
       plugins: { legend: { position: "bottom" }, tooltip: AP.tooltip },
       scales: { x: AP.axis, y: AP.yAxis }
+    }
+  });
+})();
+
+// ---- expense analysis donut ----
+(function () {
+  const el = document.getElementById("chartExpenses");
+  if (!el || !DATA.expense_values || !DATA.expense_values.length) return;
+  new Chart(el, {
+    type: "doughnut",
+    data: {
+      labels: DATA.expense_labels,
+      datasets: [{
+        data: DATA.expense_values,
+        backgroundColor: ["#2457D6", "#F0A03C", "#12805C", "#6C4AB6", "#0E9AA7"],
+        borderWidth: 2, borderColor: "#fff", hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true, cutout: "68%",
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...AP.tooltip,
+          callbacks: { label: (c) => `${c.label}: ${AP.fmt ? AP.fmt(c.parsed) : c.parsed}` } }
+      }
     }
   });
 })();

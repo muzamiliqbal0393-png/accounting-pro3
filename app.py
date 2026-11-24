@@ -15,7 +15,7 @@ from functools import wraps
 
 from flask import (Flask, abort, flash, g, jsonify, redirect, render_template,
                    request, send_file, session, url_for, current_app)
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from config import Config, ensure_dirs, prepare_data_dir, IS_SERVERLESS
 from extensions import db
@@ -94,6 +94,33 @@ def login_required(view):
             return redirect(url_for("login", next=request.path))
         return view(*args, **kwargs)
     return wrapped
+
+
+def _cached_notifications(business):
+    """Compute the bell counts once per request."""
+    cached = g.get("_notifications")
+    if cached is not None:
+        return cached
+    data = {"total": 0, "items": []}
+    if business is not None:
+        drafts = JournalEntry.query.filter_by(business_id=business.id,
+                                              status="draft").count()
+        adj = Adjustment.query.filter_by(business_id=business.id, status="draft").count()
+        closing = ClosingEntry.query.filter_by(business_id=business.id,
+                                               status="draft").count()
+        items = []
+        if drafts:
+            items.append({"label": f"{drafts} voucher draft{'' if drafts == 1 else 's'} to post",
+                          "url": url_for("transactions"), "icon": "file-text"})
+        if adj:
+            items.append({"label": f"{adj} adjusting entr{'y' if adj == 1 else 'ies'} to post",
+                          "url": url_for("adjustments"), "icon": "sliders"})
+        if closing:
+            items.append({"label": f"{closing} closing entr{'y' if closing == 1 else 'ies'} to post",
+                          "url": url_for("closing_entries_page"), "icon": "lock"})
+        data = {"total": drafts + adj + closing, "items": items}
+    g._notifications = data
+    return data
 
 
 def ensure_business(user):
@@ -336,6 +363,7 @@ def register_jinja(app):
             "period_kinds": PERIOD_KINDS,
             "accounting_methods": ACCOUNTING_METHODS,
             "report_titles": REPORT_TITLES,
+            "notifications": _cached_notifications(business),
         }
 
     @app.template_filter("tojson_safe")
@@ -622,6 +650,51 @@ def register_routes(app):
                                                    status="posted").count(),
             "adjustments": Adjustment.query.filter_by(business_id=business.id).count(),
         }
+        # ---- previous equal-length period: growth chips only when data exists
+        span = (end - start).days + 1
+        prev_end = start - timedelta(days=1)
+        prev_start = prev_end - timedelta(days=span - 1)
+        previous = analytics.dashboard_summary(business.id, prev_start, prev_end)
+        growth = {}
+        if previous["has_data"]:
+            for key in ("total_income", "total_expenses", "gross_profit", "net_profit",
+                        "cash_balance", "receivable", "payable"):
+                value = summary[key]
+                base = previous[key]
+                if key in ("gross_profit",) and not summary["is_gross_profit"]:
+                    value = -summary["gross_loss"]
+                    base = -previous["gross_loss"] if not previous["is_gross_profit"] \
+                        else previous["gross_profit"]
+                if key == "net_profit" and not summary["is_profit"]:
+                    value = -summary["net_loss"]
+                    base = -previous["net_loss"] if not previous["is_profit"] \
+                        else previous["net_profit"]
+                growth[key] = analytics.growth(value, base)
+
+        # ---- expense analysis (share of total expenses by sub-category)
+        expense_balances = account_balances(business.id, start, end, include_adjustments=True)
+        buckets = {}
+        for row in expense_balances.values():
+            account = row["account"]
+            if account.category != "Expenses":
+                continue
+            amount = row["debit_balance"] - row["credit_balance"]
+            if amount <= 0:
+                continue
+            label = account.subcategory_label or account.name
+            buckets[label] = buckets.get(label, ZERO) + amount
+        ordered = sorted(buckets.items(), key=lambda item: item[1], reverse=True)
+        top, rest = ordered[:4], ordered[4:]
+        if rest:
+            top.append(("Other", sum((amount for _, amount in rest), ZERO)))
+        expense_total = sum((amount for _, amount in top), ZERO)
+        expense_breakdown = [
+            {"label": label,
+             "amount": money(amount),
+             "percent": money(amount / expense_total * 100) if expense_total else ZERO}
+            for label, amount in top
+        ]
+
         chart_data = {
             "labels": series["labels"],
             "sales": series["sales"],
@@ -631,6 +704,8 @@ def register_routes(app):
             "products": [p["name"] for p in products],
             "product_revenue": [float(p["revenue"]) for p in products],
             "product_profit": [float(p["profit"]) for p in products],
+            "expense_labels": [row["label"] for row in expense_breakdown],
+            "expense_values": [float(row["amount"]) for row in expense_breakdown],
             "summary": {
                 "income": float(summary["total_income"]),
                 "expenses": float(summary["total_expenses"]),
@@ -641,7 +716,47 @@ def register_routes(app):
         return render_template("dashboard.html", summary=summary, chart_data=chart_data,
                                recent=recent, drafts=drafts,
                                recent_adjustments=recent_adjustments, counts=counts,
-                               products=products)
+                               products=products, growth=growth,
+                               expense_breakdown=expense_breakdown,
+                               previous=previous, previous_label=period_label(prev_start, prev_end),
+                               previous_start=prev_start, previous_end=prev_end,
+                               user_first_name=(current_user().name or "there").split(" ")[0])
+
+    # -- global search -----------------------------------------------------
+    @app.route("/search")
+    @login_required
+    def search():
+        """Search accounts, vouchers and products of the signed-in business."""
+        business = get_business()
+        query = (request.args.get("q") or "").strip()
+        accounts_found, vouchers_found, products_found = [], [], []
+        if len(query) >= 2:
+            like = f"%{query}%"
+            accounts_found = (Account.query
+                              .filter(Account.business_id == business.id,
+                                      or_(Account.code.ilike(like),
+                                          Account.name.ilike(like),
+                                          Account.subcategory.ilike(like)))
+                              .order_by(Account.code).limit(25).all())
+            vouchers_found = (JournalEntry.query
+                              .filter(JournalEntry.business_id == business.id,
+                                      or_(JournalEntry.voucher_no.ilike(like),
+                                          JournalEntry.description.ilike(like),
+                                          JournalEntry.narration.ilike(like),
+                                          JournalEntry.reference.ilike(like)))
+                              .order_by(JournalEntry.entry_date.desc()).limit(25).all())
+            products_found = (Product.query
+                              .filter(Product.business_id == business.id,
+                                      or_(Product.code.ilike(like),
+                                          Product.name.ilike(like),
+                                          Product.category.ilike(like)))
+                              .order_by(Product.code).limit(25).all())
+        return render_template("search.html", q=query,
+                               accounts_found=accounts_found,
+                               vouchers_found=vouchers_found,
+                               products_found=products_found,
+                               total=len(accounts_found) + len(vouchers_found)
+                                     + len(products_found))
 
     # -- business profile --------------------------------------------------
     @app.route("/business", methods=["GET", "POST"])
@@ -688,6 +803,22 @@ def register_routes(app):
         periods = (AccountingPeriod.query.filter_by(business_id=business.id)
                    .order_by(AccountingPeriod.start_date).all())
         return render_template("business_profile.html", business=business, periods=periods)
+
+    @app.route("/business/logo/remove", methods=["POST"])
+    @login_required
+    def remove_business_logo():
+        """Remove the uploaded logo only — every other business field is untouched."""
+        business = get_business()
+        if not business.logo:
+            flash("There is no logo to remove.", "info")
+            return redirect(url_for("business_profile"))
+        previous_logo = business.logo
+        business.logo = None
+        db.session.commit()
+        audit("Business logo removed", "Business", business.id,
+              previous={"logo": previous_logo})
+        flash("Business logo removed. Reports will use the plain letterhead.", "success")
+        return redirect(url_for("business_profile"))
 
     @app.route("/business/periods", methods=["POST"])
     @business_required
