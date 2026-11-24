@@ -67,11 +67,24 @@ TURSO_AUTH_TOKEN = (os.environ.get("TURSO_AUTH_TOKEN")
 
 
 def normalize_db_url(url):
-    """Map hosted libSQL URLs onto the SQLAlchemy libsql dialect."""
+    """Map hosted libSQL URLs onto the SQLAlchemy libsql dialect.
+
+    Turso endpoints answer plain ``libsql://`` connections with a 308 redirect to
+    HTTPS, so ``secure=true`` is added for any remote (hosted) endpoint.  Local
+    file paths (``libsql:///path/to.db``) are left untouched.
+    """
+    url = url.strip()
     if url.startswith("libsql://"):
-        return "sqlite+libsql://" + url[len("libsql://"):]
-    if url.startswith(("https://", "http://")) and ".turso." in url:
-        return "sqlite+libsql://" + url.split("://", 1)[1]
+        rest = url[len("libsql://"):]
+        if rest.startswith("/") or rest.startswith("file:"):
+            return "sqlite+libsql://" + rest
+        url = "sqlite+libsql://" + rest
+    elif url.startswith(("https://", "http://")) and ".turso." in url:
+        url = "sqlite+libsql://" + url.split("://", 1)[1]
+    else:
+        return url
+    if "secure=" not in url:
+        url += ("&" if "?" in url else "?") + "secure=true"
     return url
 
 
