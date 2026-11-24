@@ -410,3 +410,88 @@
 @media (min-width: 1600px) {
   .hero { min-height: 720px; }
 }
+
+/* ==========================================================================
+   PROFESSIONAL SPLIT HERO  (image fully visible next to the copy)
+   Appended last so it wins over the earlier full-bleed rules.
+   ========================================================================== */
+.hero.hero-split {
+  min-height: 0;
+  align-items: stretch;
+  display: block;
+  background:
+    radial-gradient(1050px 520px at 82% 6%, rgba(36, 87, 214, .38), transparent 64%),
+    radial-gradient(820px 460px at 4% 96%, rgba(46, 110, 246, .20), transparent 62%),
+    #101D3A;
+  padding: clamp(36px, 4.4vw, 66px) 0 clamp(44px, 5vw, 76px);
+}
+.hero-split .hero-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.04fr) minmax(0, .96fr);
+  align-items: center;
+  gap: clamp(26px, 3.6vw, 58px);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 4vw, 28px);
+}
+.hero-split .hero-copy { max-width: 620px; }
+.hero-split .hero-eyebrow { margin-bottom: 18px; }
+.hero-split .hero-desc { margin-bottom: 24px; }
+.hero-split .hero-actions { margin-bottom: 24px; }
+
+.hero-split .hero-visual { position: relative; }
+.hero-frame {
+  position: relative;
+  aspect-ratio: 16 / 11;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #0a1428;
+  border: 1px solid rgba(255, 255, 255, .16);
+  box-shadow:
+    0 46px 90px -46px rgba(0, 0, 0, .9),
+    0 0 0 1px rgba(255, 255, 255, .05) inset;
+}
+.hero-frame::after {
+  content: "";
+  position: absolute; inset: 0; pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18);
+}
+.hero-split .hero-slides { position: absolute; inset: 0; z-index: 0; }
+.hero-split .hero-slide img { object-position: center; }
+.hero-split .hero-dots {
+  position: static; transform: none; left: auto; bottom: auto;
+  justify-content: center; margin-top: 16px; gap: 7px;
+}
+.hero-split .hero-dots button { background: rgba(255, 255, 255, .26); }
+.hero-split .hero-dots button.is-active { background: #fff; }
+
+/* a soft accent behind the frame so it feels lit, not pasted on */
+.hero-split .hero-visual::before {
+  content: "";
+  position: absolute; inset: -14% -10% -18% -6%;
+  background: radial-gradient(closest-side, rgba(70, 130, 255, .28), transparent 72%);
+  filter: blur(18px);
+  z-index: -1;
+}
+
+@media (max-width: 991.98px) {
+  .hero-split .hero-inner { grid-template-columns: 1fr; gap: 24px; }
+  .hero-split .hero-copy { max-width: none; }
+  .hero-frame { aspect-ratio: 16 / 10; border-radius: 16px; }
+  .hero-split .hero-dots { margin-top: 14px; }
+}
+
+@media (max-width: 767.98px) {
+  .hero.hero-split { min-height: 0; padding: 26px 0 40px; }
+  .hero-split .hero-inner { padding-top: 0; padding-bottom: 0; }
+  .hero-frame { aspect-ratio: 16 / 10; }
+}
+
+/* hero polish: the chosen photographs are night-time desk shots — lift them so
+   they read as crisp product imagery instead of a dark rectangle */
+.hero-split .hero-slide img {
+  filter: brightness(1.16) saturate(1.06) contrast(1.02);
+}
+.hero-split h1 { font-size: clamp(1.95rem, 1.2rem + 2.15vw, 3rem); }
+.hero-split .hero-inner { grid-template-columns: minmax(0, 1.06fr) minmax(0, .94fr); }

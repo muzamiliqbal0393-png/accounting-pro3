@@ -5,35 +5,7 @@
 {% block home_content %}
 
 <!-- ============================== HERO ============================== -->
-<section class="hero" id="home" aria-label="Introduction">
-  <div class="hero-slides" id="heroSlides" aria-hidden="true">
-    <div class="hero-slide is-active">
-      <picture>
-        <source type="image/webp" srcset="{{ url_for('static', filename='images/home/hero-1.webp') }}">
-        <img src="{{ url_for('static', filename='images/home/hero-1.jpg') }}" alt="" width="1672" height="941" fetchpriority="high">
-      </picture>
-    </div>
-    <div class="hero-slide">
-      <picture>
-        <source type="image/webp" srcset="{{ url_for('static', filename='images/home/hero-2.webp') }}">
-        <img src="{{ url_for('static', filename='images/home/hero-2.jpg') }}" alt="" width="1672" height="941" loading="lazy">
-      </picture>
-    </div>
-    <div class="hero-slide">
-      <picture>
-        <source type="image/webp" srcset="{{ url_for('static', filename='images/home/hero-3.webp') }}">
-        <img src="{{ url_for('static', filename='images/home/hero-3.jpg') }}" alt="" width="1672" height="941" loading="lazy">
-      </picture>
-    </div>
-    <div class="hero-slide">
-      <picture>
-        <source type="image/webp" srcset="{{ url_for('static', filename='images/home/hero-4.webp') }}">
-        <img src="{{ url_for('static', filename='images/home/hero-4.jpg') }}" alt="" width="1672" height="941" loading="lazy">
-      </picture>
-    </div>
-  </div>
-  <div class="hero-overlay" aria-hidden="true"></div>
-
+<section class="hero hero-split" id="home" aria-label="Introduction">
   <div class="hero-inner">
     <div class="hero-copy">
       <span class="hero-eyebrow"><span class="dot"></span> Computerized Accounting &amp; Business Management</span>
@@ -54,13 +26,41 @@
         <li>{{ icon('file-text') }} PDF · Word · Excel</li>
       </ul>
     </div>
-  </div>
 
-  <div class="hero-dots" id="heroDots" role="tablist" aria-label="Hero background images">
-    <button type="button" class="is-active" role="tab" aria-selected="true" aria-label="Show image 1"></button>
-    <button type="button" role="tab" aria-selected="false" aria-label="Show image 2"></button>
-    <button type="button" role="tab" aria-selected="false" aria-label="Show image 3"></button>
-    <button type="button" role="tab" aria-selected="false" aria-label="Show image 4"></button>
+    <div class="hero-visual">
+      <div class="hero-frame">
+      <div class="hero-slide is-active">
+        <picture>
+          <source type="image/webp" srcset="{{ url_for('static', filename='images/home/hero-2.webp') }}">
+          <img src="{{ url_for('static', filename='images/home/hero-2.jpg') }}" alt="" width="1672" height="941" fetchpriority="high">
+        </picture>
+      </div>
+      <div class="hero-slide">
+        <picture>
+          <source type="image/webp" srcset="{{ url_for('static', filename='images/home/hero-4.webp') }}">
+          <img src="{{ url_for('static', filename='images/home/hero-4.jpg') }}" alt="" width="1672" height="941" loading="lazy">
+        </picture>
+      </div>
+      <div class="hero-slide">
+        <picture>
+          <source type="image/webp" srcset="{{ url_for('static', filename='images/home/hero-1.webp') }}">
+          <img src="{{ url_for('static', filename='images/home/hero-1.jpg') }}" alt="" width="1672" height="941">
+        </picture>
+      </div>
+      <div class="hero-slide">
+        <picture>
+          <source type="image/webp" srcset="{{ url_for('static', filename='images/home/hero-3.webp') }}">
+          <img src="{{ url_for('static', filename='images/home/hero-3.jpg') }}" alt="" width="1672" height="941" loading="lazy">
+        </picture>
+      </div>
+      </div>
+      <div class="hero-dots" id="heroDots" role="tablist" aria-label="Hero images">
+        <button type="button" class="is-active" role="tab" aria-selected="true" aria-label="Show image 1"></button>
+        <button type="button" role="tab" aria-selected="false" aria-label="Show image 2"></button>
+        <button type="button" role="tab" aria-selected="false" aria-label="Show image 3"></button>
+        <button type="button" role="tab" aria-selected="false" aria-label="Show image 4"></button>
+      </div>
+    </div>
   </div>
 </section>
 
