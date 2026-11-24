@@ -1,0 +1,26 @@
+{
+  "name": "ACCOUNTING PRO - Complete Accounting & Business Management System",
+  "short_name": "Accounting Pro",
+  "description": "Professional computerized accounting system with double-entry bookkeeping, financial statements, inventory, budgets and reporting.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F5F7FB",
+  "theme_color": "#101D3A",
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

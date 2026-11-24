@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/macros.html' import empty_state %}
+{% block title %}Trial Balance{% endblock %}
+{% block page_title %}Trial Balance{% endblock %}
+{% block crumb %}Reports · Opening balances + posted vouchers{% endblock %}
+
+{% block content %}
+<div class="card mb-3 no-print">
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-lg-6">
+        <form method="get" class="row g-2 align-items-end">
+          <div class="col-6 col-md-4">
+            <label class="form-label">From</label>
+            <input type="date" class="form-control form-control-sm" name="start" value="{{ period_start }}">
+          </div>
+          <div class="col-6 col-md-4">
+            <label class="form-label">To</label>
+            <input type="date" class="form-control form-control-sm" name="end" value="{{ period_end }}">
+          </div>
+          <div class="col-12 col-md-4">
+            <button class="btn btn-primary btn-sm w-100" type="submit">Apply</button>
+          </div>
+        </form>
+      </div>
+      <div class="col-12 col-lg-6 d-flex flex-wrap gap-2 justify-content-lg-end">
+        <a class="btn btn-sm btn-ghost" href="{{ url_for('trial_balance_manual') }}">
+          {{ icon('edit') }} Enter / import trial balance</a>
+        <button class="btn btn-sm btn-ghost" type="button" data-print>{{ icon('printer') }} Print</button>
+        <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='pdf', report_name='trial_balance') }}">PDF</a>
+        <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='word', report_name='trial_balance') }}">Word</a>
+        <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='excel', report_name='trial_balance') }}">Excel</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h3>Trial Balance</h3>
+      <div class="hint">{{ business.name }} · {{ period_label }}</div>
+    </div>
+    <span class="spacer"></span>
+    <span class="status-pill {{ 'ok' if data.is_balanced else 'bad' }}">
+      {{ 'Balanced' if data.is_balanced else 'Not balanced' }}
+    </span>
+  </div>
+  <div class="table-wrap">
+    <table class="table table-stack align-middle">
+      <thead>
+        <tr>
+          <th style="width:12%">Account Code</th>
+          <th>Account Name</th>
+          <th style="width:16%">Category</th>
+          <th class="text-end" style="width:16%">Debit (Rs.)</th>
+          <th class="text-end" style="width:16%">Credit (Rs.)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cat, rows in by_cat.items() %}
+          <tr style="background:#f7f9fd">
+            <td colspan="5"><strong>{{ cat }}</strong></td>
+          </tr>
+          {% for r in rows %}
+            <tr>
+              <td class="code" data-label="Code">{{ r.code }}</td>
+              <td data-label="Account Name">{{ r.name }}</td>
+              <td class="hint" data-label="Category">{{ r.subcategory_label }}</td>
+              <td class="num" data-label="Debit">{{ r.debit|rs if r.debit else '' }}</td>
+              <td class="num" data-label="Credit">{{ r.credit|rs if r.credit else '' }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="5">
+            {{ empty_state('Trial balance is empty',
+               'No accounts carry balances for ' ~ period_label ~ '. Set opening balances or post vouchers.',
+               'scale', url_for('accounts'), 'Chart of Accounts') }}
+          </td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="row-total">
+          <td colspan="3">Total</td>
+          <td class="num">{{ data.total_debit|rs }}</td>
+          <td class="num">{{ data.total_credit|rs }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <div class="card-body">
+    <div class="totals-strip">
+      <div class="item"><span>Total Debit:</span><strong>{{ data.total_debit|rs }}</strong></div>
+      <div class="item"><span>Total Credit:</span><strong>{{ data.total_credit|rs }}</strong></div>
+      <div class="item"><span>Difference:</span>
+        <strong class="{{ 'amount-pos' if data.difference == 0 else 'amount-neg' }}">{{ data.difference|rs }}</strong>
+      </div>
+      <div class="item ms-auto">
+        {% if data.is_balanced %}
+          <span class="status-pill ok">Balanced</span>
+        {% else %}
+          <span class="status-pill bad">Not balanced — no balancing figure has been inserted</span>
+        {% endif %}
+      </div>
+    </div>
+    {% if not data.is_balanced %}
+      <div class="alert alert-warning mt-3 mb-0">
+        The debit and credit totals differ by {{ data.difference|rs }}. Check that every voucher is
+        balanced and that opening balances were entered with equal debit and credit totals.
+        <a href="{{ url_for('transactions') }}">Review vouchers</a>.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

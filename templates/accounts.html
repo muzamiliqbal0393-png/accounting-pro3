@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/macros.html' import empty_state %}
+{% block title %}Chart of Accounts{% endblock %}
+{% block page_title %}Chart of Accounts{% endblock %}
+{% block crumb %}Setup · Account structure and opening balances{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-12 col-md-3">
+        <label class="form-label">Search</label>
+        <input class="form-control form-control-sm" name="q" value="{{ search }}" placeholder="Code or name">
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label">Category</label>
+        <select class="form-select form-select-sm" name="category">
+          <option value="">All categories</option>
+          {% for c in categories %}
+            <option value="{{ c }}" {{ 'selected' if category == c }}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label">Status</label>
+        <select class="form-select form-select-sm" name="status">
+          <option value="">All</option>
+          <option value="active" {{ 'selected' if status == 'active' }}>Active</option>
+          <option value="inactive" {{ 'selected' if status == 'inactive' }}>Inactive</option>
+        </select>
+      </div>
+      <div class="col-12 col-md-2">
+        <button class="btn btn-primary btn-sm w-100" type="submit">Filter</button>
+      </div>
+      <div class="col-12 col-md-2 text-md-end">
+        <button class="btn btn-ghost btn-sm w-100" type="button" data-bs-toggle="modal" data-bs-target="#addAccount">
+          {{ icon('plus') }} Add Account
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>{{ accounts|length }} accounts</h3>
+    <span class="spacer"></span>
+    {% if not accounts %}
+    <form method="post" action="{{ url_for('load_default_accounts') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-sm btn-primary" type="submit">Load standard chart</button>
+    </form>
+    {% endif %}
+  </div>
+  <div class="table-wrap">
+    <table class="table table-stack align-middle">
+      <thead>
+        <tr>
+          <th>Code</th><th>Account Name</th><th>Category</th><th>Subcategory</th>
+          <th>Normal</th><th class="text-end">Opening Dr</th><th class="text-end">Opening Cr</th>
+          <th class="text-end">Current Balance</th><th>Status</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for a in accounts %}
+        <tr>
+          <td class="code" data-label="Code">{{ a.code }}</td>
+          <td data-label="Account">
+            <strong>{{ a.name }}</strong>
+            {% if a.description %}<div class="hint">{{ a.description }}</div>{% endif %}
+          </td>
+          <td data-label="Category"><span class="badge-soft badge-info">{{ a.category }}</span></td>
+          <td class="hint" data-label="Subcategory">{{ a.subcategory_label }}</td>
+          <td class="hint" data-label="Normal">{{ a.normal_balance }}</td>
+          <td class="num" data-label="Opening Dr">{{ a.opening_debit|rs }}</td>
+          <td class="num" data-label="Opening Cr">{{ a.opening_credit|rs }}</td>
+          {% set bal = balances.get(a.id, 0) %}
+          <td class="num {{ 'amount-neg' if bal|neg }}" data-label="Balance">
+            {{ bal|rs }} <span class="hint">{{ 'Dr' if bal >= 0 else 'Cr' }}</span>
+          </td>
+          <td data-label="Status">
+            {% if a.is_active %}<span class="badge-soft badge-posted">Active</span>
+            {% else %}<span class="badge-soft badge-off">Inactive</span>{% endif %}
+          </td>
+          <td class="text-end nowrap">
+            <button class="btn btn-sm btn-ghost" data-bs-toggle="modal"
+                    data-bs-target="#editAccount{{ a.id }}">{{ icon('edit') }}</button>
+            <form method="post" action="{{ url_for('account_toggle', account_id=a.id) }}" class="d-inline">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm btn-ghost" type="submit"
+                      title="{{ 'Deactivate' if a.is_active else 'Activate' }}">
+                {{ icon('check' if not a.is_active else 'x') }}
+              </button>
+            </form>
+          </td>
+        </tr>
+
+        <!-- edit modal -->
+        <div class="modal fade" id="editAccount{{ a.id }}" tabindex="-1">
+          <div class="modal-dialog modal-lg modal-dialog-centered">
+            <form class="modal-content" method="post" action="{{ url_for('account_edit', account_id=a.id) }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <div class="modal-header"><h5 class="modal-title">Edit {{ a.code }} - {{ a.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+              <div class="modal-body">
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label class="form-label required">Code</label>
+                    <input class="form-control" name="code" value="{{ a.code }}" required>
+                  </div>
+                  <div class="col-md-9">
+                    <label class="form-label required">Name</label>
+                    <input class="form-control" name="name" value="{{ a.name }}" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label required">Category</label>
+                    <select class="form-select" name="category" required>
+                      {% for c in categories %}
+                        <option value="{{ c }}" {{ 'selected' if a.category == c }}>{{ c }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label required">Subcategory</label>
+                    <select class="form-select" name="subcategory" required>
+                      <option value="{{ a.subcategory }}" selected>{{ a.subcategory_label }}</option>
+                      {% for c, subs in subcategory_choices.items() %}
+                        {% for key, label in subs %}
+                          {% if key != a.subcategory %}
+                            <option value="{{ key }}">{{ label }} ({{ c }})</option>
+                          {% endif %}
+                        {% endfor %}
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Opening Debit</label>
+                    <input class="form-control" name="opening_debit" value="{{ a.opening_debit }}"
+                           inputmode="decimal" placeholder="0.00">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Opening Credit</label>
+                    <input class="form-control" name="opening_credit" value="{{ a.opening_credit }}"
+                           inputmode="decimal" placeholder="0.00">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" name="description" rows="2">{{ a.description or '' }}</textarea>
+                  </div>
+                  <div class="col-12">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="is_active" id="act{{ a.id }}"
+                             {{ 'checked' if a.is_active }}>
+                      <label class="form-check-label" for="act{{ a.id }}">Account is active</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-primary" type="submit">Save changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        <tr><td colspan="10">
+          {{ empty_state('No accounts yet',
+             'Load the standard chart of accounts as a starting template, or add your own accounts one by one.',
+             'layers') }}
+        </td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- add account modal -->
+<div class="modal fade" id="addAccount" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <form class="modal-content" method="post" action="{{ url_for('account_create') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header"><h5 class="modal-title">Add account</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label required">Account Code</label>
+            <input class="form-control" name="code" required placeholder="e.g. 1100">
+          </div>
+          <div class="col-md-9">
+            <label class="form-label required">Account Name</label>
+            <input class="form-control" name="name" required placeholder="e.g. Petty Cash">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label required">Category</label>
+            <select class="form-select" name="category" required id="newCategory">
+              {% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+            </select>
+            <div class="form-text">Normal balance is set automatically from the category.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label required">Subcategory</label>
+            <select class="form-select" name="subcategory" required>
+              {% for c, subs in subcategory_choices.items() %}
+                {% for key, label in subs %}
+                  <option value="{{ key }}">{{ label }} ({{ c }})</option>
+                {% endfor %}
+              {% endfor %}
+            </select>
+            <div class="form-text">Subcategory drives where the account appears in reports.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Opening Debit</label>
+            <input class="form-control" name="opening_debit" inputmode="decimal" placeholder="0.00">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Opening Credit</label>
+            <input class="form-control" name="opening_credit" inputmode="decimal" placeholder="0.00">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" name="description" rows="2"></textarea>
+          </div>
+          <div class="col-12">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="is_active" id="newActive" checked>
+              <label class="form-check-label" for="newActive">Account is active</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" type="submit">Create account</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

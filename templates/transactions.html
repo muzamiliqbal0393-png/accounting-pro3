@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/macros.html' import status_badge, empty_state %}
+{% block title %}Transactions{% endblock %}
+{% block page_title %}Transactions{% endblock %}
+{% block crumb %}Transactions · Voucher history{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-6 col-md-2">
+        <label class="form-label">From</label>
+        <input type="date" class="form-control form-control-sm" name="start" value="{{ start or '' }}">
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label">To</label>
+        <input type="date" class="form-control form-control-sm" name="end" value="{{ end or '' }}">
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label">Status</label>
+        <select class="form-select form-select-sm" name="status">
+          <option value="">All</option>
+          {% for s in ['posted', 'draft', 'reversed'] %}
+            <option value="{{ s }}" {{ 'selected' if status == s }}>{{ s|capitalize }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label">Type</label>
+        <select class="form-select form-select-sm" name="type">
+          <option value="">All types</option>
+          {% for t in entry_types %}
+            <option value="{{ t }}" {{ 'selected' if entry_type == t }}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label">Account</label>
+        <select class="form-select form-select-sm" name="account_id">
+          <option value="">All accounts</option>
+          {% for a in accounts %}
+            <option value="{{ a.id }}" {{ 'selected' if account_id == a.id }}>{{ a.code }} · {{ a.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label">Search</label>
+        <input class="form-control form-control-sm" name="q" value="{{ search }}" placeholder="Voucher, text">
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button class="btn btn-primary btn-sm" type="submit">Apply filters</button>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('transactions') }}">Clear</a>
+        <a class="btn btn-primary btn-sm ms-auto" href="{{ url_for('transaction_new') }}">
+          {{ icon('plus') }} New Voucher</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>{{ pagination.total }} voucher{{ '' if pagination.total == 1 else 's' }}</h3>
+    <span class="spacer"></span>
+    <span class="hint">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+  </div>
+  <div class="table-wrap">
+    <table class="table table-stack align-middle">
+      <thead>
+        <tr>
+          <th>Date</th><th>Voucher</th><th>Type</th><th>Description</th>
+          <th class="text-end">Debit</th><th class="text-end">Credit</th><th>Status</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for e in items %}
+        <tr>
+          <td data-label="Date" class="nowrap">{{ e.entry_date|dt }}</td>
+          <td data-label="Voucher"><a href="{{ url_for('transaction_view', entry_id=e.id) }}">{{ e.voucher_no }}</a></td>
+          <td data-label="Type" class="hint">{{ e.entry_type }}</td>
+          <td data-label="Description">{{ e.description or '—' }}
+            {% if e.reversal_of_id %}<span class="badge-soft badge-info">reversal</span>{% endif %}</td>
+          <td class="num" data-label="Debit">{{ e.total_debit|rs }}</td>
+          <td class="num" data-label="Credit">{{ e.total_credit|rs }}</td>
+          <td data-label="Status">{{ status_badge(e.status) }}</td>
+          <td class="text-end nowrap">
+            <a class="btn btn-sm btn-ghost" href="{{ url_for('transaction_view', entry_id=e.id) }}">{{ icon('eye') }}</a>
+            {% if e.status == 'draft' %}
+              <a class="btn btn-sm btn-ghost" href="{{ url_for('transaction_edit', entry_id=e.id) }}">{{ icon('edit') }}</a>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8">
+          {{ empty_state('No vouchers found',
+             'No transactions match these filters. Create a new voucher to get started.',
+             'list', url_for('transaction_new'), 'New Voucher') }}
+        </td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pagination.pages > 1 %}
+  <div class="pagination-bar no-print">
+    <span class="hint">Showing {{ pagination.start_index }}–{{ [pagination.start_index + pagination.per_page - 1, pagination.total]|min }} of {{ pagination.total }}</span>
+    <nav class="pages">
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+          <a class="page-link" href="{{ url_for('transactions', page=pagination.prev_num, start=start, end=end, status=status, type=entry_type, account_id=account_id, q=search) }}">Prev</a>
+        </li>
+        {% for p in pagination.iter_pages() %}
+          <li class="page-item {{ 'active' if p == pagination.page }}">
+            <a class="page-link" href="{{ url_for('transactions', page=p, start=start, end=end, status=status, type=entry_type, account_id=account_id, q=search) }}">{{ p }}</a>
+          </li>
+        {% endfor %}
+        <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+          <a class="page-link" href="{{ url_for('transactions', page=pagination.next_num, start=start, end=end, status=status, type=entry_type, account_id=account_id, q=search) }}">Next</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

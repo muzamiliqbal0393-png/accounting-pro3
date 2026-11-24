@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% block title %}Business Profile{% endblock %}
+{% block page_title %}Business Profile{% endblock %}
+{% block crumb %}Setup · Business details &amp; accounting periods{% endblock %}
+
+{% block content %}
+{% if not business.name %}
+<div class="alert alert-warning d-flex align-items-center gap-2">
+  {{ icon('alert') }}
+  <span>Your business profile is empty. Enter your real business details below — nothing is pre-filled
+    or invented for you.</span>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-xl-8">
+    <form method="post" enctype="multipart/form-data" class="card">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="card-header">
+        <h3>Business Details</h3>
+        <span class="spacer"></span>
+        <span class="hint">All reports use these details</span>
+      </div>
+      <div class="card-body">
+        <div class="form-section">
+          <div class="form-section-title">Identity</div>
+          <div class="row g-3">
+            <div class="col-md-7">
+              <label class="form-label required" for="name">Business Name</label>
+              <input class="form-control" id="name" name="name" required value="{{ business.name or '' }}"
+                     placeholder="e.g. Al-Noor Traders">
+            </div>
+            <div class="col-md-5">
+              <label class="form-label" for="owner_name">Owner Name</label>
+              <input class="form-control" id="owner_name" name="owner_name" value="{{ business.owner_name or '' }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="business_type">Business Type</label>
+              <input class="form-control" id="business_type" name="business_type"
+                     value="{{ business.business_type or '' }}" placeholder="e.g. Retail, Services, Manufacturing">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="logo">Business Logo</label>
+              <input class="form-control" type="file" id="logo" name="logo" accept="image/*">
+              <div class="form-text">PNG/JPG, used on PDF and Word cover pages.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">Contact</div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="phone">Phone Number</label>
+              <input class="form-control" id="phone" name="phone" value="{{ business.phone or '' }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="email">Email</label>
+              <input class="form-control" type="email" id="email" name="email" value="{{ business.email or '' }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="address">Business Address</label>
+              <textarea class="form-control" id="address" name="address" rows="2">{{ business.address or '' }}</textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">Accounting</div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="currency">Currency</label>
+              <select class="form-select" id="currency" name="currency">
+                {% for cur in ['PKR', 'USD', 'GBP', 'AED', 'SAR', 'EUR'] %}
+                  <option value="{{ cur }}" {{ 'selected' if business.currency == cur }}>{{ cur }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="accounting_method">Accounting Method</label>
+              <select class="form-select" id="accounting_method" name="accounting_method">
+                {% for m in accounting_methods %}
+                  <option value="{{ m }}" {{ 'selected' if business.accounting_method == m }}>{{ m }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="fy_start">Year Start</label>
+              <input type="date" class="form-control" id="fy_start" name="fy_start"
+                     value="{{ business.fy_start }}">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="fy_end">Year End</label>
+              <input type="date" class="form-control" id="fy_end" name="fy_end" value="{{ business.fy_end }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="description">Business Description</label>
+              <textarea class="form-control" id="description" name="description" rows="2">{{ business.description or '' }}</textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary" type="submit">{{ icon('check') }} Save Profile</button>
+          <a class="btn btn-ghost" href="{{ url_for('dashboard') }}">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="col-xl-4">
+    <div class="card mb-3">
+      <div class="card-header"><h3>Logo</h3></div>
+      <div class="card-body text-center">
+        {% if business.logo %}
+          <img src="{{ url_for('uploaded_file', filename='logos/' ~ business.logo) }}"
+               alt="Business logo" style="max-width:140px;max-height:140px;border-radius:12px;border:1px solid var(--line)">
+          <p class="hint mt-2 mb-0">Upload a new file to replace it.</p>
+        {% else %}
+          <div class="empty-state py-3">
+            <div class="icon">{{ icon('building') }}</div>
+            <p class="mb-0">No logo uploaded yet.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3>Accounting Periods</h3>
+      </div>
+      <div class="card-body tight">
+        <div class="table-wrap">
+          <table class="table table-sm mb-0">
+            <thead><tr><th>Label</th><th>Range</th><th></th></tr></thead>
+            <tbody>
+            {% for p in periods %}
+              <tr>
+                <td>{{ p.label }}<br><span class="hint">{{ p.kind }}</span></td>
+                <td class="hint">{{ p.start_date|dt }}<br>{{ p.end_date|dt }}</td>
+                <td class="text-end">
+                  {% if p.is_active %}
+                    <span class="badge-soft badge-posted">Active</span>
+                  {% else %}
+                    <form method="post" action="{{ url_for('activate_period', period_id=p.id) }}" class="d-inline">
+                      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-sm btn-ghost" type="submit">Activate</button>
+                    </form>
+                    <form method="post" action="{{ url_for('delete_period', period_id=p.id) }}" class="d-inline"
+                          data-confirm="Delete period {{ p.label }}?">
+                      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-sm btn-ghost text-danger" type="submit">×</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-body border-top">
+        <form method="post" action="{{ url_for('add_period') }}" class="row g-2">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <div class="col-12">
+            <label class="form-label">New period label</label>
+            <input class="form-control form-control-sm" name="label" required placeholder="e.g. Jan 2026">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Start</label>
+            <input type="date" class="form-control form-control-sm" name="start_date" required value="2026-01-01">
+          </div>
+          <div class="col-6">
+            <label class="form-label">End</label>
+            <input type="date" class="form-control form-control-sm" name="end_date" required value="2026-01-31">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Type</label>
+            <select class="form-select form-select-sm" name="kind">
+              {% for k in period_kinds %}<option value="{{ k }}">{{ k }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-12">
+            <button class="btn btn-sm btn-primary w-100" type="submit">Add period</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>Next steps</h3></div>
+      <div class="card-body">
+        <ol class="hint ps-3 mb-0" style="line-height:2">
+          <li><a href="{{ url_for('accounts') }}">Set up your chart of accounts</a></li>
+          <li>Enter opening balances</li>
+          <li><a href="{{ url_for('transaction_new') }}">Record your transactions</a></li>
+          <li>Post <a href="{{ url_for('adjustment_new') }}">adjusting entries</a></li>
+          <li>Review the <a href="{{ url_for('trial_balance_page') }}">trial balance</a></li>
+          <li>Generate <a href="{{ url_for('export_center') }}">PDF / Word / Excel</a> reports</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

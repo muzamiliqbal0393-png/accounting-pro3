@@ -1,0 +1,48 @@
+{% from 'partials/icons.html' import icon %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101D3A">
+  <title>{% block title %}Sign in{% endblock %} · ACCOUNTING PRO</title>
+  <link rel="manifest" href="{{ url_for('manifest') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="auth-wrap">
+  <section class="auth-hero">
+    <div class="brand-mark mb-4" style="width:52px;height:52px;font-size:18px">AP</div>
+    <h1>ACCOUNTING PRO</h1>
+    <p class="mt-2">Complete Computerized Accounting &amp; Business Management System — real double-entry
+      bookkeeping, automated financial statements, inventory, budgets and professional exports.</p>
+
+    <div class="mt-4">
+      <div class="auth-feature"><span class="tick">✓</span><span>Double-entry vouchers with live debit / credit validation</span></div>
+      <div class="auth-feature"><span class="tick">✓</span><span>Trading, Profit &amp; Loss, Balance Sheet and Cash Flow</span></div>
+      <div class="auth-feature"><span class="tick">✓</span><span>Adjusting &amp; closing entries with a full audit trail</span></div>
+      <div class="auth-feature"><span class="tick">✓</span><span>PDF, Word and Excel exports of every report</span></div>
+    </div>
+    <p class="mt-4" style="font-size:11.5px;color:#7d8fb3">
+      Your business data is private — every account is isolated to its own user.
+    </p>
+  </section>
+
+  <section class="auth-panel">
+    <div class="auth-card">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'info' }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+      <p class="text-center mt-4 mb-0 hint">© {{ today.year }} ACCOUNTING PRO · Final Year Project</p>
+    </div>
+  </section>
+</div>
+<script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/macros.html' import empty_state %}
+{% block title %}Adjusted Trial Balance{% endblock %}
+{% block page_title %}Adjusted Trial Balance{% endblock %}
+{% block crumb %}Reports · Trial balance plus posted adjustments{% endblock %}
+
+{% block content %}
+<div class="card mb-3 no-print">
+  <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-6 col-md-4">
+        <label class="form-label">From</label>
+        <input type="date" class="form-control form-control-sm" name="start" value="{{ period_start }}">
+      </div>
+      <div class="col-6 col-md-4">
+        <label class="form-label">To</label>
+        <input type="date" class="form-control form-control-sm" name="end" value="{{ period_end }}">
+      </div>
+      <div class="col-12 col-md-4"><button class="btn btn-primary btn-sm w-100">Apply</button></div>
+    </form>
+    <div class="ms-auto d-flex flex-wrap gap-2">
+      <button class="btn btn-sm btn-ghost" type="button" data-print>{{ icon('printer') }} Print</button>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='pdf', report_name='adjusted_trial_balance') }}">PDF</a>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='word', report_name='adjusted_trial_balance') }}">Word</a>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='excel', report_name='adjusted_trial_balance') }}">Excel</a>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div><h3>Adjusted Trial Balance</h3><div class="hint">{{ period_label }}</div></div>
+    <span class="spacer"></span>
+    <span class="status-pill {{ 'ok' if data.totals.is_balanced else 'bad' }}">
+      {{ 'Balanced' if data.totals.is_balanced else 'Not balanced' }}</span>
+  </div>
+  <div class="table-wrap">
+    <table class="table table-stack align-middle">
+      <thead>
+        <tr>
+          <th>Account</th>
+          <th class="text-end">TB Debit</th><th class="text-end">TB Credit</th>
+          <th class="text-end">Adj. Debit</th><th class="text-end">Adj. Credit</th>
+          <th class="text-end">Adjusted Debit</th><th class="text-end">Adjusted Credit</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in data.rows %}
+          <tr>
+            <td data-label="Account"><span class="code">{{ r.code }}</span> {{ r.name }}
+              <div class="hint">{{ r.category }}</div></td>
+            <td class="num" data-label="TB Debit">{{ r.debit|rs if r.debit else '' }}</td>
+            <td class="num" data-label="TB Credit">{{ r.credit|rs if r.credit else '' }}</td>
+            <td class="num" data-label="Adj. Debit">{{ r.adj_debit|rs if r.adj_debit else '' }}</td>
+            <td class="num" data-label="Adj. Credit">{{ r.adj_credit|rs if r.adj_credit else '' }}</td>
+            <td class="num" data-label="Adjusted Debit">{{ r.adjusted_debit|rs if r.adjusted_debit else '' }}</td>
+            <td class="num" data-label="Adjusted Credit">{{ r.adjusted_credit|rs if r.adjusted_credit else '' }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7">
+            {{ empty_state('Nothing to report', 'No account balances for ' ~ period_label ~ '.', 'scale') }}
+          </td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="row-total">
+          <td>Total</td>
+          <td class="num">{{ data.totals.orig_debit|rs }}</td>
+          <td class="num">{{ data.totals.orig_credit|rs }}</td>
+          <td class="num">{{ data.totals.adj_debit|rs }}</td>
+          <td class="num">{{ data.totals.adj_credit|rs }}</td>
+          <td class="num">{{ data.totals.adjusted_debit|rs }}</td>
+          <td class="num">{{ data.totals.adjusted_credit|rs }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <div class="card-body">
+    <div class="totals-strip">
+      <div class="item"><span>Adjusted debit:</span><strong>{{ data.totals.adjusted_debit|rs }}</strong></div>
+      <div class="item"><span>Adjusted credit:</span><strong>{{ data.totals.adjusted_credit|rs }}</strong></div>
+      <div class="item"><span>Difference:</span>
+        <strong class="{{ 'amount-pos' if data.totals.difference == 0 else 'amount-neg' }}">
+          {{ data.totals.difference|rs }}</strong></div>
+      <div class="item ms-auto">
+        <a class="btn btn-sm btn-ghost" href="{{ url_for('adjustments') }}">Manage adjustments</a>
+      </div>
+    </div>
+    {% if data.totals.is_balanced == false %}
+      <div class="alert alert-danger mt-3 mb-0">
+        The adjusted trial balance does not balance. An adjustment or voucher must be unbalanced —
+        review the entries above before generating statements.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

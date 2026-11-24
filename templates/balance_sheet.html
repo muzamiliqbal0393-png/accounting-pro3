@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/macros.html' import empty_state %}
+{% block title %}Balance Sheet{% endblock %}
+{% block page_title %}Balance Sheet{% endblock %}
+{% block crumb %}Financial statements · Position at period end{% endblock %}
+
+{% macro item_rows(items) %}
+  {% for item in items %}
+    <tr><td>{{ item.name }} <span class="hint">{{ item.code }}</span></td>
+      <td class="num">{{ item.amount|rs }}</td></tr>
+  {% endfor %}
+{% endmacro %}
+
+{% block content %}
+<div class="card mb-3 no-print">
+  <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-6 col-md-4"><label class="form-label">From</label>
+        <input type="date" class="form-control form-control-sm" name="start" value="{{ period_start }}"></div>
+      <div class="col-6 col-md-4"><label class="form-label">To</label>
+        <input type="date" class="form-control form-control-sm" name="end" value="{{ period_end }}"></div>
+      <div class="col-12 col-md-4"><button class="btn btn-primary btn-sm w-100">Apply</button></div>
+    </form>
+    <div class="ms-auto d-flex flex-wrap gap-2">
+      <button class="btn btn-sm btn-ghost" type="button" data-print>{{ icon('printer') }} Print</button>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='pdf', report_name='balance_sheet') }}">PDF</a>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='word', report_name='balance_sheet') }}">Word</a>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='excel', report_name='balance_sheet') }}">Excel</a>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="stat-card tone-asset">
+    <div class="stat-label">Total Assets</div><div class="stat-value">{{ bs.total_assets|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-liability">
+    <div class="stat-label">Total Liabilities</div><div class="stat-value">{{ bs.total_liabilities|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-equity">
+    <div class="stat-label">Owner's Equity</div><div class="stat-value">{{ bs.total_equity|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card {{ 'tone-income' if bs.is_balanced else 'tone-expense' }}">
+    <div class="stat-label">Balance check</div>
+    <div class="stat-value {{ 'neg' if not bs.is_balanced }}">{{ bs.difference|rs }}</div>
+    <div class="stat-sub">{{ 'Assets = Liabilities + Equity' if bs.is_balanced else 'Difference (not forced)' }}</div></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><h3>Assets</h3>
+        <span class="spacer"></span><span class="hint">as at {{ period_end|dt }}</span></div>
+      <div class="table-wrap">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Particulars</th><th class="text-end">Amount (Rs.)</th></tr></thead>
+          <tbody>
+            <tr class="row-total"><td colspan="2">Current Assets</td></tr>
+            {{ item_rows(bs.current_assets) }}
+            <tr><td class="fw-bold">Total Current Assets</td>
+              <td class="num fw-bold">{{ bs.total_current_assets|rs }}</td></tr>
+            <tr class="row-total"><td colspan="2">Fixed / Non-current Assets</td></tr>
+            {{ item_rows(bs.fixed_assets) }}
+            <tr><td class="fw-bold">Total Fixed Assets</td>
+              <td class="num fw-bold">{{ bs.total_fixed_assets|rs }}</td></tr>
+            {% if not bs.current_assets and not bs.fixed_assets %}
+              <tr><td colspan="2" class="text-center text-muted py-3">No asset balances.</td></tr>
+            {% endif %}
+          </tbody>
+          <tfoot><tr class="row-total"><td>Total Assets</td>
+            <td class="num">{{ bs.total_assets|rs }}</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><h3>Liabilities &amp; Owner's Equity</h3></div>
+      <div class="table-wrap">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Particulars</th><th class="text-end">Amount (Rs.)</th></tr></thead>
+          <tbody>
+            <tr class="row-total"><td colspan="2">Current Liabilities</td></tr>
+            {{ item_rows(bs.current_liabilities) }}
+            <tr><td class="fw-bold">Total Current Liabilities</td>
+              <td class="num fw-bold">{{ bs.total_current_liabilities|rs }}</td></tr>
+            <tr class="row-total"><td colspan="2">Long Term Liabilities</td></tr>
+            {{ item_rows(bs.long_term_liabilities) }}
+            <tr><td class="fw-bold">Total Long Term Liabilities</td>
+              <td class="num fw-bold">{{ bs.total_long_term_liabilities|rs }}</td></tr>
+            <tr class="row-total"><td colspan="2">Owner's Equity</td></tr>
+            {% for line in bs.capital_lines %}
+              <tr><td>{{ line.name }}</td><td class="num">{{ line.display_amount|rs }}</td></tr>
+            {% endfor %}
+            <tr><td class="fw-bold">Total Owner's Equity</td>
+              <td class="num fw-bold">{{ bs.total_equity|rs }}</td></tr>
+          </tbody>
+          <tfoot>
+            <tr class="row-total"><td>Total Liabilities + Equity</td>
+              <td class="num">{{ bs.total_liabilities_equity|rs }}</td></tr>
+            <tr><td>Difference</td>
+              <td class="num {{ 'amount-pos' if bs.is_balanced else 'amount-neg' }}">{{ bs.difference|rs }}</td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if not bs.is_balanced %}
+<div class="card mt-3">
+  <div class="card-body">
+    <div class="alert alert-danger mb-0">
+      <strong>The balance sheet does not balance.</strong> Assets exceed / fall short of liabilities plus
+      equity by {{ bs.difference|rs }}. No artificial balancing figure has been inserted.
+      <ul class="mb-0 mt-2" style="font-size:12.5px">
+        <li>Check that every voucher balances and that adjustments are correct.</li>
+        <li>Confirm every account has the right subcategory (it decides its report placement).</li>
+        <li>If you posted a closing stock adjustment, credit the "Trading A/c" contra account so the
+          trading result and the balance sheet agree.</li>
+        <li><a href="{{ url_for('trial_balance_page') }}">Open Trial Balance</a> ·
+          <a href="{{ url_for('accounts') }}">Review Chart of Accounts</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

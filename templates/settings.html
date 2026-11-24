@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block crumb %}System · Profile, preferences and data{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-xl-7">
+    <div class="card mb-3">
+      <div class="card-header"><h3>User profile</h3></div>
+      <div class="card-body">
+        <form method="post">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="section" value="profile">
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label required">Name</label>
+              <input class="form-control" name="name" value="{{ user.name }}" required></div>
+            <div class="col-md-6"><label class="form-label required">Email</label>
+              <input class="form-control" type="email" name="email" value="{{ user.email }}" required></div>
+          </div>
+          <button class="btn btn-primary btn-sm mt-3" type="submit">Save profile</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><h3>Change password</h3></div>
+      <div class="card-body">
+        <form method="post">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="section" value="password">
+          <div class="row g-3">
+            <div class="col-12"><label class="form-label required">Current password</label>
+              <input class="form-control" type="password" name="current_password" required></div>
+            <div class="col-md-6"><label class="form-label required">New password</label>
+              <input class="form-control" type="password" name="new_password" required minlength="8"></div>
+            <div class="col-md-6"><label class="form-label required">Confirm new password</label>
+              <input class="form-control" type="password" name="confirm_password" required minlength="8"></div>
+          </div>
+          <button class="btn btn-primary btn-sm mt-3" type="submit">Update password</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>Currency, invoice &amp; report preferences</h3></div>
+      <div class="card-body">
+        <form method="post">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="section" value="preferences">
+          <div class="row g-3">
+            <div class="col-md-4"><label class="form-label">Currency</label>
+              <select class="form-select" name="currency">
+                {% for c in ['PKR','USD','GBP','AED','SAR','EUR'] %}
+                  <option value="{{ c }}" {{ 'selected' if settings.currency == c }}>{{ c }}</option>
+                {% endfor %}
+              </select></div>
+            <div class="col-md-4"><label class="form-label">Currency symbol</label>
+              <input class="form-control" name="currency_symbol" value="{{ settings.currency_symbol }}"></div>
+            <div class="col-md-4"><label class="form-label">Theme</label>
+              <select class="form-select" name="theme">
+                <option value="light" {{ 'selected' if settings.theme == 'light' }}>Light</option>
+                <option value="dark" {{ 'selected' if settings.theme == 'dark' }}>Dark (beta)</option>
+              </select></div>
+            <div class="col-md-4"><label class="form-label">Invoice prefix</label>
+              <input class="form-control" name="invoice_prefix" value="{{ settings.invoice_prefix or 'INV-' }}"></div>
+            <div class="col-md-8"><label class="form-label">Invoice terms</label>
+              <input class="form-control" name="invoice_terms" value="{{ settings.invoice_terms or '' }}"></div>
+            <div class="col-12"><label class="form-label">Report footer text</label>
+              <input class="form-control" name="report_footer" value="{{ settings.report_footer or '' }}"
+                     placeholder="Appears at the bottom of exported reports"></div>
+            <div class="col-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="show_decimals" id="dec"
+                       {{ 'checked' if settings.show_decimals }}>
+                <label class="form-check-label" for="dec">Show two decimal places</label>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm mt-3" type="submit">Save preferences</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-5">
+    <div class="card mb-3">
+      <div class="card-header"><h3>Financial year</h3></div>
+      <div class="card-body">
+        <dl class="kv mb-2">
+          <dt>Year start</dt><dd>{{ business.fy_start|dt }}</dd>
+          <dt>Year end</dt><dd>{{ business.fy_end|dt }}</dd>
+          <dt>Method</dt><dd>{{ business.accounting_method }}</dd>
+          <dt>Active period</dt><dd>{{ active_period.label if active_period else '—' }}</dd>
+          <dt>Business</dt><dd>{{ business.name or 'not set' }}</dd>
+        </dl>
+        <a class="btn btn-sm btn-ghost" href="{{ url_for('business_profile') }}">Edit business profile</a>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><h3>Data summary</h3></div>
+      <div class="card-body">
+        <div class="row text-center g-2">
+          <div class="col-6"><div class="stat-label justify-content-center">Accounts</div>
+            <div class="stat-value">{{ counts.accounts }}</div></div>
+          <div class="col-6"><div class="stat-label justify-content-center">Vouchers</div>
+            <div class="stat-value">{{ counts.entries }}</div></div>
+          <div class="col-6"><div class="stat-label justify-content-center">Products</div>
+            <div class="stat-value">{{ counts.products }}</div></div>
+          <div class="col-6"><div class="stat-label justify-content-center">Budgets</div>
+            <div class="stat-value">{{ counts.budgets }}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>Security &amp; data</h3></div>
+      <div class="card-body d-grid gap-2">
+        <a class="btn btn-ghost btn-sm btn-icon" href="{{ url_for('backup_page') }}">
+          {{ icon('database') }} Backup &amp; restore</a>
+        <a class="btn btn-ghost btn-sm btn-icon" href="{{ url_for('audit_log') }}">
+          {{ icon('shield') }} Audit log</a>
+        <p class="hint mb-0">Passwords are hashed with PBKDF2-SHA256 (600,000 iterations). Sessions are
+          protected with CSRF tokens and all queries are parameterised through SQLAlchemy.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

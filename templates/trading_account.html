@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/macros.html' import two_side, empty_state %}
+{% block title %}Trading Account{% endblock %}
+{% block page_title %}Trading Account{% endblock %}
+{% block crumb %}Financial statements · Gross profit computation{% endblock %}
+
+{% block content %}
+<div class="card mb-3 no-print">
+  <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-6 col-md-4"><label class="form-label">From</label>
+        <input type="date" class="form-control form-control-sm" name="start" value="{{ period_start }}"></div>
+      <div class="col-6 col-md-4"><label class="form-label">To</label>
+        <input type="date" class="form-control form-control-sm" name="end" value="{{ period_end }}"></div>
+      <div class="col-12 col-md-4"><button class="btn btn-primary btn-sm w-100">Apply</button></div>
+    </form>
+    <div class="ms-auto d-flex flex-wrap gap-2">
+      <button class="btn btn-sm btn-ghost" type="button" data-print>{{ icon('printer') }} Print</button>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='pdf', report_name='trading_account') }}">PDF</a>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='word', report_name='trading_account') }}">Word</a>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='excel', report_name='trading_account') }}">Excel</a>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="stat-card tone-income">
+    <div class="stat-label">Net Sales</div><div class="stat-value">{{ t.net_sales|rs }}</div>
+    <div class="stat-sub">Sales {{ t.sales|rs }} less returns {{ t.sales_returns|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-asset">
+    <div class="stat-label">Cost of Goods Sold</div><div class="stat-value">{{ t.cogs|rs }}</div>
+    <div class="stat-sub">Opening + purchases + direct − closing</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card {{ 'tone-income' if t.is_profit else 'tone-expense' }}">
+    <div class="stat-label">{{ 'Gross Profit' if t.is_profit else 'Gross Loss' }}</div>
+    <div class="stat-value {{ 'neg' if not t.is_profit }}">
+      {{ (t.gross_profit if t.is_profit else t.gross_loss)|rs }}</div>
+    <div class="stat-sub">Trading result</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-cash">
+    <div class="stat-label">Closing Stock</div><div class="stat-value">{{ t.closing_stock|rs }}</div>
+    <div class="stat-sub">From inventory account balances</div></div></div>
+</div>
+
+{% if t.has_activity %}
+  {{ two_side('Trading Account for ' ~ period_label, t.debit_items, t.credit_items,
+              t.total_debit, t.total_credit,
+              {'label': 'Gross Profit' if t.is_profit else 'Gross Loss',
+               'amount': (t.gross_profit if t.is_profit else t.gross_loss)}) }}
+  <div class="card mt-3">
+    <div class="card-body">
+      <h3 class="mb-2" style="font-size:.9rem">Working</h3>
+      <div class="table-wrap">
+        <table class="table table-sm mb-0">
+          <tbody>
+            <tr><td>Opening Stock</td><td class="num">{{ t.opening_stock|rs }}</td></tr>
+            <tr><td>Add: Net Purchases ({{ t.purchases|rs }} − returns {{ t.purchase_returns|rs }})</td>
+              <td class="num">{{ t.net_purchases|rs }}</td></tr>
+            <tr><td>Add: Direct Expenses (carriage, wages, freight)</td><td class="num">{{ t.direct_total|rs }}</td></tr>
+            <tr><td>Less: Closing Stock</td><td class="num">({{ t.closing_stock|rs }})</td></tr>
+            <tr class="row-total"><td>Cost of Goods Sold</td><td class="num">{{ t.cogs|rs }}</td></tr>
+            <tr><td>Net Sales</td><td class="num">{{ t.net_sales|rs }}</td></tr>
+            <tr class="row-total"><td>Gross {{ 'Profit' if t.is_profit else 'Loss' }}</td>
+              <td class="num">{{ (t.gross_profit if t.is_profit else t.gross_loss)|rs }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% else %}
+  <div class="card"><div class="card-body">
+    {{ empty_state('No trading activity',
+       'No sales, purchases, stock or direct expense balances exist for ' ~ period_label ~
+       '. Post trading vouchers or set opening stock to build this account.',
+       'chart', url_for('transaction_new'), 'New Voucher') }}
+  </div></div>
+{% endif %}
+
+<div class="card mt-3">
+  <div class="card-body d-flex flex-wrap gap-2">
+    <a class="btn btn-sm btn-primary" href="{{ url_for('profit_loss_page') }}">Continue to Profit &amp; Loss</a>
+    <a class="btn btn-sm btn-ghost" href="{{ url_for('balance_sheet_page') }}">Balance Sheet</a>
+  </div>
+</div>
+{% endblock %}

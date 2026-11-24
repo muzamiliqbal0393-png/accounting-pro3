@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% block title %}Enter Trial Balance{% endblock %}
+{% block page_title %}Enter / Import Trial Balance{% endblock %}
+{% block crumb %}Reports · Trial Balance data entry{% endblock %}
+
+{% block content %}
+<div class="alert alert-info">
+  Amounts entered here are stored as the <strong>opening balances</strong> of the selected accounts, so the
+  trial balance is generated from real records. The trial balance will only be applied when total debit
+  equals total credit — nothing is forced to balance.
+  <a href="{{ url_for('import_center') }}" class="ms-1">Prefer a spreadsheet? Use the Import Center.</a>
+</div>
+
+<form method="post">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <div class="card mb-3">
+    <div class="card-header"><h3>Account balances</h3>
+      <span class="spacer"></span><span class="hint">{{ accounts|length }} accounts available</span></div>
+    <div class="table-wrap">
+      <table class="table table-sm align-middle mb-0">
+        <thead>
+          <tr><th style="width:16%">Account Code</th><th>Account Name</th>
+            <th class="text-end" style="width:18%">Debit (Rs.)</th>
+            <th class="text-end" style="width:18%">Credit (Rs.)</th></tr>
+        </thead>
+        <tbody>
+          {% for i in rows %}
+            <tr>
+              <td>
+                <select class="form-select form-select-sm" name="code_{{ i }}">
+                  <option value="">—</option>
+                  {% for a in accounts %}
+                    <option value="{{ a.code }}">{{ a.code }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td><select class="form-select form-select-sm" disabled>
+                  <option>Select a code on the left</option></select></td>
+              <td><input class="form-control form-control-sm text-end" name="debit_{{ i }}" inputmode="decimal" placeholder="0.00"></td>
+              <td><input class="form-control form-control-sm text-end" name="credit_{{ i }}" inputmode="decimal" placeholder="0.00"></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-body d-flex flex-wrap gap-2">
+      <button class="btn btn-ghost" type="submit" name="action" value="preview">Preview totals</button>
+      <button class="btn btn-primary" type="submit" name="action" value="apply">Apply as opening balances</button>
+      <a class="btn btn-ghost ms-auto" href="{{ url_for('trial_balance_page') }}">Back to trial balance</a>
+    </div>
+  </div>
+</form>
+
+{% if preview %}
+<div class="card">
+  <div class="card-header"><h3>Preview</h3></div>
+  <div class="table-wrap">
+    <table class="table table-sm">
+      <thead><tr><th>Code</th><th class="text-end">Debit</th><th class="text-end">Credit</th></tr></thead>
+      <tbody>
+        {% for e in preview.entries %}
+          <tr><td>{{ e.code }}</td>
+            <td class="num">{{ e.debit|rs }}</td><td class="num">{{ e.credit|rs }}</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="row-total">
+          <td>Total</td>
+          <td class="num">{{ preview.total_debit|rs }}</td>
+          <td class="num">{{ preview.total_credit|rs }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <div class="card-body">
+    <div class="totals-strip">
+      <div class="item"><span>Difference:</span><strong>{{ preview.difference|rs }}</strong></div>
+      <div class="item ms-auto">
+        <span class="status-pill {{ 'ok' if preview.is_balanced else 'bad' }}">
+          {{ 'Balanced' if preview.is_balanced else 'Not balanced' }}</span>
+      </div>
+    </div>
+    {% if preview.unknown %}
+      <div class="alert alert-danger mt-3 mb-0">Unknown account codes: {{ preview.unknown|join(', ') }}</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

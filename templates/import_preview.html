@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% block title %}Import Preview{% endblock %}
+{% block page_title %}Import Preview — {{ kinds[info.kind].title }}{% endblock %}
+{% block crumb %}Data · Validate before writing{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="stat-card tone-asset">
+    <div class="stat-label">Rows read</div><div class="stat-value">{{ result.summary.total_rows }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-income">
+    <div class="stat-label">Valid records</div><div class="stat-value">{{ result.summary.valid }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-expense">
+    <div class="stat-label">Errors</div><div class="stat-value">{{ result.summary.errors }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-liability">
+    <div class="stat-label">Warnings</div><div class="stat-value">{{ result.summary.warnings }}</div></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-xl-5">
+    <div class="card mb-3">
+      <div class="card-header"><h3>2 · Map columns</h3></div>
+      <div class="card-body">
+        <form method="post">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <div class="row g-2">
+            {% for field, label, required in kinds[info.kind].fields %}
+              <div class="col-12">
+                <label class="form-label {{ 'required' if required }}">{{ label }}</label>
+                <select class="form-select form-select-sm" name="map_{{ field }}">
+                  <option value="">— not mapped —</option>
+                  {% for h in info.headers %}
+                    <option value="{{ h }}" {{ 'selected' if info.mapping.get(field) == h }}>{{ h }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            {% endfor %}
+          </div>
+          <button class="btn btn-primary btn-sm w-100 mt-3" type="submit">Re-validate</button>
+        </form>
+        <div class="divider"></div>
+        <form method="post" action="{{ url_for('import_confirm') }}"
+              data-confirm="Import {{ result.summary.valid }} valid record(s) into your books?">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" name="as_draft" id="asDraft">
+            <label class="form-check-label" for="asDraft">Save vouchers as drafts (not posted)</label>
+          </div>
+          <button class="btn btn-primary w-100" type="submit" {{ 'disabled' if not result.summary.valid }}>
+            {{ icon('check') }} Confirm import of {{ result.summary.valid }} record(s)
+          </button>
+        </form>
+        <form method="post" action="{{ url_for('import_cancel') }}" class="mt-2">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-ghost btn-sm w-100" type="submit">Cancel import</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-7">
+    {% if result.errors %}
+      <div class="card mb-3">
+        <div class="card-header"><h3 class="text-danger">Errors — fix these rows</h3></div>
+        <div class="table-wrap">
+          <table class="table table-sm mb-0">
+            <thead><tr><th style="width:80px">Row</th><th>Problem</th></tr></thead>
+            <tbody>
+              {% for e in result.errors %}
+                <tr><td class="code">{{ e.row }}</td><td>{{ e.message }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if result.warnings %}
+      <div class="card mb-3">
+        <div class="card-header"><h3>Warnings</h3></div>
+        <div class="table-wrap">
+          <table class="table table-sm mb-0">
+            <tbody>
+              {% for w in result.warnings %}
+                <tr><td class="code" style="width:80px">{{ w.row }}</td><td>{{ w.message }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="card mb-3">
+      <div class="card-header"><h3>File preview (first 10 rows)</h3>
+        <span class="spacer"></span><span class="hint">{{ info.filename }}</span></div>
+      <div class="table-wrap">
+        <table class="table table-sm mb-0">
+          <thead><tr>{% for h in info.headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+          <tbody>
+            {% for row in preview_rows %}
+              <tr>{% for h in info.headers %}<td class="hint">{{ row.get(h, '') }}</td>{% endfor %}</tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

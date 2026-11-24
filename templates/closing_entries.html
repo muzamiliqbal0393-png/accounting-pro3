@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/macros.html' import status_badge, empty_state %}
+{% block title %}Closing Entries{% endblock %}
+{% block page_title %}Closing Entries{% endblock %}
+{% block crumb %}Year end · Close temporary accounts into capital{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-xl-7">
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3>Closing entry preview</h3>
+        <span class="spacer"></span>
+        <span class="status-pill {{ 'ok' if preview.is_balanced else 'bad' }}">
+          {{ 'Balanced' if preview.is_balanced else 'Not balanced' }}</span>
+      </div>
+      <div class="table-wrap">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Account</th><th>Description</th>
+            <th class="text-end">Debit</th><th class="text-end">Credit</th></tr></thead>
+          <tbody>
+            {% for line in preview.lines %}
+              <tr>
+                <td><span class="code">{{ line.account.code }}</span> {{ line.account.name }}</td>
+                <td class="hint">{{ line.description }}</td>
+                <td class="num">{{ line.debit|rs if line.debit else '' }}</td>
+                <td class="num">{{ line.credit|rs if line.credit else '' }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="4">
+                {{ empty_state('Nothing to close',
+                   'There are no revenue, expense, drawings or opening stock balances in ' ~ period_label ~ '.',
+                   'lock') }}
+              </td></tr>
+            {% endfor %}
+          </tbody>
+          {% if preview.lines %}
+          <tfoot><tr class="row-total"><td colspan="2">Total</td>
+            <td class="num">{{ preview.total_debit|rs }}</td>
+            <td class="num">{{ preview.total_credit|rs }}</td></tr></tfoot>
+          {% endif %}
+        </table>
+      </div>
+      <div class="card-body">
+        <div class="totals-strip">
+          <div class="item"><span>Net result to capital:</span>
+            <strong>{{ preview.net_result|rs }}</strong></div>
+          <div class="item"><span>P&amp;L net result:</span><strong>{{ preview.pl_net|rs }}</strong></div>
+          <div class="item"><span>Reconciles:</span>
+            <strong class="{{ 'amount-pos' if preview.reconciles else 'amount-neg' }}">
+              {{ 'Yes' if preview.reconciles else (preview.reconciliation_difference|rs) ~ ' difference' }}
+            </strong></div>
+        </div>
+        {% if not preview.reconciles %}
+          <div class="alert alert-warning mt-3 mb-0" style="font-size:12.5px">
+            The amount transferred to capital differs from the Profit &amp; Loss result by
+            {{ preview.reconciliation_difference|rs }}. This usually means the closing stock contra account
+            does not equal the inventory balance. Review your stock adjustments before posting.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if preview.lines %}
+    <div class="card">
+      <div class="card-header"><h3>Post closing entries</h3></div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('closing_generate') }}"
+              data-confirm="Generate closing entries for {{ period_label }}?">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-6 col-md-4">
+              <label class="form-label">Entry date</label>
+              <input type="date" class="form-control form-control-sm" name="entry_date" value="{{ period_end }}">
+            </div>
+            <div class="col-12 col-md-5">
+              <label class="form-label">Description</label>
+              <input class="form-control form-control-sm" name="description"
+                     value="Closing entries for period ending {{ period_end|dt }}">
+            </div>
+            <div class="col-6 col-md-3 d-flex gap-2">
+              <button class="btn btn-ghost btn-sm w-100" type="submit" name="action" value="draft">Save draft</button>
+              <button class="btn btn-primary btn-sm w-100" type="submit" name="action" value="post">Post</button>
+            </div>
+          </div>
+          <p class="hint mt-2 mb-0">Review the preview above before posting. Posted closing entries are
+            permanent — they appear in the audit log and cannot be deleted.</p>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-xl-5">
+    <div class="card">
+      <div class="card-header"><h3>Closing entries history</h3></div>
+      <div class="table-wrap">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Entry</th><th>Date</th><th class="text-end">Net</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {% for e in entries %}
+              <tr>
+                <td><strong>{{ e.entry_no }}</strong><div class="hint">{{ e.description }}</div></td>
+                <td class="nowrap">{{ e.entry_date|dt }}</td>
+                <td class="num">{{ e.net_result|rs }}</td>
+                <td>{{ status_badge(e.status) }}</td>
+                <td class="text-end nowrap">
+                  {% if e.status != 'posted' %}
+                    <form method="post" action="{{ url_for('closing_post', closing_id=e.id) }}" class="d-inline">
+                      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-sm btn-ghost" type="submit">{{ icon('check') }}</button>
+                    </form>
+                    <form method="post" action="{{ url_for('closing_delete', closing_id=e.id) }}" class="d-inline"
+                          data-confirm="Delete closing draft {{ e.entry_no }}?">
+                      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-sm btn-ghost text-danger" type="submit">{{ icon('trash') }}</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="5" class="text-center text-muted py-4">No closing entries yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="card-body">
+        <a class="btn btn-sm btn-ghost" href="{{ url_for('post_closing_tb_page') }}">
+          View Post-Closing Trial Balance</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

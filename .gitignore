@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.vercel/
+# runtime state (not source)
+uploads/logos/*
+uploads/attachments/*
+uploads/imports/*
+uploads/backups/*
+!uploads/.gitkeep
+# local scratch database copies - accounting_pro.db itself IS committed on purpose
+# so the deployed demo has data on the first cold start
+*.db-journal
+*.db-wal
+*.db-shm
+pre_reset_*.db
+
+# generated artefacts (kept in the workspace, not in git)
+screenshots/

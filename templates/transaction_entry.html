@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% block title %}{{ 'Edit ' ~ entry.voucher_no if entry else 'New Voucher' }}{% endblock %}
+{% block page_title %}{{ 'Edit Draft ' ~ entry.voucher_no if entry else 'New Transaction Voucher' }}{% endblock %}
+{% block crumb %}Transactions · Double-entry voucher{% endblock %}
+
+{% block content %}
+{% if not accounts|length %}
+<div class="alert alert-warning d-flex gap-2 align-items-center">
+  {{ icon('alert') }}
+  <span>You have no active accounts yet. Set up your chart of accounts first.</span>
+  <a class="btn btn-sm btn-primary ms-auto" href="{{ url_for('accounts') }}">Chart of Accounts</a>
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" id="journal-form">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3>Voucher details</h3>
+      <span class="spacer"></span>
+      <span class="hint">{{ period_label }}</span>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-6 col-md-2">
+          <label class="form-label" for="voucher_no">Voucher No.</label>
+          <input class="form-control" id="voucher_no" name="voucher_no"
+                 value="{{ entry.voucher_no if entry else suggested_no }}">
+          <div class="form-text">Must be unique.</div>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label required" for="entry_date">Date</label>
+          <input type="date" class="form-control" id="entry_date" name="entry_date" required
+                 value="{{ entry.entry_date if entry else (form.get('entry_date') or default_date) }}">
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label" for="entry_type">Transaction Type</label>
+          <select class="form-select" id="entry_type" name="entry_type">
+            {% for t in entry_types %}
+              <option value="{{ t }}"
+                {{ 'selected' if (entry and entry.entry_type == t) or (not entry and t == 'General Journal') }}>
+                {{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-5">
+          <label class="form-label" for="description">Description</label>
+          <input class="form-control" id="description" name="description"
+                 value="{{ entry.description if entry else form.get('description','') }}"
+                 placeholder="e.g. Cash sales for the week">
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label" for="reference">Reference Number</label>
+          <input class="form-control" id="reference" name="reference"
+                 value="{{ entry.reference if entry else '' }}" placeholder="Invoice / bill / cheque no.">
+        </div>
+        <div class="col-12 col-md-5">
+          <label class="form-label" for="narration">Narration</label>
+          <input class="form-control" id="narration" name="narration"
+                 value="{{ entry.narration if entry else '' }}"
+                 placeholder="Explanation that appears in the journal">
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label" for="attachment">Attachment (optional)</label>
+          <input class="form-control" type="file" id="attachment" name="attachment">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3>Journal lines</h3>
+      <span class="spacer"></span>
+      <button class="btn btn-sm btn-ghost" type="button" id="add-line">{{ icon('plus') }} Add line</button>
+    </div>
+    <div class="table-wrap">
+      <table class="table align-middle mb-0" id="line-table">
+        <thead>
+          <tr>
+            <th style="width:38%">Account</th>
+            <th class="text-end" style="width:17%">Debit (Rs.)</th>
+            <th class="text-end" style="width:17%">Credit (Rs.)</th>
+            <th>Line description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set row_count = [6, (entry.lines|length + 3) if entry else 6]|max %}
+          {% for i in range(1, row_count + 1) %}
+            {% set line = entry.lines[i-1] if entry and i <= entry.lines|length else None %}
+            <tr data-line>
+              <td data-label="Account">
+                <select class="form-select form-select-sm" name="account_id_{{ i }}" aria-label="Account">
+                  <option value="">— select account —</option>
+                  {% for a in accounts %}
+                    <option value="{{ a.id }}" {{ 'selected' if line and line.account_id == a.id }}>
+                      {{ a.code }} · {{ a.name }} ({{ a.category }})
+                    </option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td data-label="Debit">
+                <input class="form-control form-control-sm text-end" name="debit_{{ i }}"
+                       data-field="debit" inputmode="decimal" placeholder="0.00"
+                       value="{{ '%.2f'|format(line.debit) if line and line.debit else '' }}">
+              </td>
+              <td data-label="Credit">
+                <input class="form-control form-control-sm text-end" name="credit_{{ i }}"
+                       data-field="credit" inputmode="decimal" placeholder="0.00"
+                       value="{{ '%.2f'|format(line.credit) if line and line.credit else '' }}">
+              </td>
+              <td data-label="Description">
+                <input class="form-control form-control-sm" name="description_{{ i }}"
+                       value="{{ line.description or '' if line else '' }}" placeholder="Optional">
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-body">
+      <div class="totals-strip justify-content-between">
+        <div class="item"><span>Total Debit</span><strong id="total-debit">Rs. 0.00</strong></div>
+        <div class="item"><span>Total Credit</span><strong id="total-credit">Rs. 0.00</strong></div>
+        <div class="item"><span>Difference</span><strong id="total-diff">Rs. 0.00</strong></div>
+        <div class="item"><span class="status-pill bad" id="balance-status">Enter amounts</span></div>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <button class="btn btn-primary" type="submit" name="action" value="post" id="post-btn" disabled>
+          {{ icon('check') }} Post Entry
+        </button>
+        <button class="btn btn-ghost" type="submit" name="action" value="draft">
+          {{ icon('file') }} Save as Draft
+        </button>
+        <a class="btn btn-ghost ms-auto" href="{{ url_for('transactions') }}">Cancel</a>
+      </div>
+      <p class="hint mt-2 mb-0">
+        Total debit must equal total credit before a voucher can be posted. Posted vouchers cannot be
+        edited or deleted — use a reversal entry instead.
+      </p>
+    </div>
+  </div>
+</form>
+{% endblock %}

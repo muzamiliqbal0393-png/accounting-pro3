@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% block title %}Export Center{% endblock %}
+{% block page_title %}Export Center{% endblock %}
+{% block crumb %}Data · PDF, Word and Excel reports{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-12 col-lg-6">
+        <h3 class="mb-1">Report period</h3>
+        <p class="hint mb-2">Every export below uses the working period shown in the top bar.</p>
+        <form method="post" action="{{ url_for('set_period') }}" class="row g-2 align-items-end">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <div class="col-6 col-md-4"><label class="form-label">From</label>
+            <input type="date" class="form-control form-control-sm" name="start" value="{{ period_start }}"></div>
+          <div class="col-6 col-md-4"><label class="form-label">To</label>
+            <input type="date" class="form-control form-control-sm" name="end" value="{{ period_end }}"></div>
+          <div class="col-12 col-md-4"><button class="btn btn-primary btn-sm w-100">Set period</button></div>
+        </form>
+      </div>
+      <div class="col-12 col-lg-6">
+        <div class="totals-strip">
+          <div class="item"><span>Business:</span><strong>{{ business.name }}</strong></div>
+          <div class="item"><span>Period:</span><strong>{{ period_label }}</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h3>Complete accounting file</h3>
+    <span class="spacer"></span>
+    <span class="hint">All statements, ledgers and workings in one document</span>
+  </div>
+  <div class="card-body d-flex flex-wrap gap-2">
+    <a class="btn btn-primary btn-icon" href="{{ url_for('export_full', fmt='pdf') }}">
+      {{ icon('file') }} Complete PDF</a>
+    <a class="btn btn-ghost btn-icon" href="{{ url_for('export_full', fmt='word') }}">
+      {{ icon('file-text') }} Complete Word</a>
+    <a class="btn btn-ghost btn-icon" href="{{ url_for('export_full', fmt='excel') }}">
+      {{ icon('download') }} Complete Excel (17 sheets)</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Individual reports</h3></div>
+  <div class="table-wrap">
+    <table class="table table-stack align-middle">
+      <thead><tr><th>Report</th><th class="text-end">PDF</th><th class="text-end">Word</th><th class="text-end">Excel</th></tr></thead>
+      <tbody>
+        {% for key, title in titles.items() %}
+          {% if key != 'full_project' %}
+          <tr>
+            <td data-label="Report">
+              <strong>{{ title }}</strong>
+              {% if key == 'general_ledger' %}<div class="hint">All accounts with balances</div>{% endif %}
+            </td>
+            <td class="text-end" data-label="PDF">
+              <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='pdf', report_name=key) }}">PDF</a></td>
+            <td class="text-end" data-label="Word">
+              <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='word', report_name=key) }}">Word</a></td>
+            <td class="text-end" data-label="Excel">
+              <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='excel', report_name=key) }}">Excel</a></td>
+          </tr>
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4"><div class="hint"><strong>PDF</strong> — A4 with cover page, business logo,
+        repeated table headers, page numbers and headers/footers.</div></div>
+      <div class="col-md-4"><div class="hint"><strong>Word</strong> — editable .docx with cover page,
+        tables, headings and page numbers in the footer.</div></div>
+      <div class="col-md-4"><div class="hint"><strong>Excel</strong> — .xlsx with formatted headers,
+        frozen panes, filters, currency formats and totals.</div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

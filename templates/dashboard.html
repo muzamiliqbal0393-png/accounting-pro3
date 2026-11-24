@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/macros.html' import status_badge, empty_state %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block crumb %}Financial overview · {{ period_label }}{% endblock %}
+
+{% block content %}
+
+<!-- ============ summary cards ============ -->
+<div class="row g-3 mb-3">
+  {% set cards = [
+    ('Total Income', summary.total_income, 'tone-income', 'trending', 'Net sales + other income'),
+    ('Total Expenses', summary.total_expenses, 'tone-expense', 'activity', 'Direct + indirect expenses'),
+    ('Total Assets', summary.total_assets, 'tone-asset', 'briefcase', 'Balance sheet assets'),
+    ('Total Liabilities', summary.total_liabilities, 'tone-liability', 'scale', 'Payables, loans & accruals'),
+    ("Owner's Capital", summary.owner_capital, 'tone-equity', 'user', 'Capital + retained result'),
+    ('Gross Profit', summary.gross_profit if summary.is_gross_profit else -summary.gross_loss,
+      'tone-income' if summary.is_gross_profit else 'tone-expense', 'chart',
+      'Trading account result'),
+    ('Net Profit / (Loss)', summary.net_profit if summary.is_profit else -summary.net_loss,
+      'tone-income' if summary.is_profit else 'tone-expense', 'pie',
+      'Profit & loss result'),
+    ('Cash Balance', summary.cash_balance, 'tone-cash', 'wallet', 'Cash in hand + bank'),
+    ('Accounts Receivable', summary.receivable, 'tone-asset', 'user', 'Debtors outstanding'),
+    ('Accounts Payable', summary.payable, 'tone-liability', 'users', 'Creditors outstanding')
+  ] %}
+  {% for label, value, tone, ico, sub in cards %}
+  <div class="col-6 col-md-4 col-xl-3 col-xxl-2 stat-col">
+    <div class="stat-card {{ tone }}">
+      <div class="stat-icon">{{ icon(ico) }}</div>
+      <div class="stat-label">{{ label }}</div>
+      <div class="stat-value {{ 'neg' if value|neg }}">{{ value|rs }}</div>
+      <div class="stat-sub">{{ sub }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if not summary.has_data %}
+<div class="alert alert-info d-flex flex-wrap gap-2 align-items-center">
+  {{ icon('info') }}
+  <span class="flex-grow-1">
+    <strong>No transactions yet.</strong> All figures show Rs. 0.00 because nothing has been posted
+    in {{ period_label }}. Start by loading the standard chart of accounts, then record your vouchers.
+  </span>
+  <a class="btn btn-sm btn-primary" href="{{ url_for('accounts') }}">Chart of Accounts</a>
+  <a class="btn btn-sm btn-ghost" href="{{ url_for('transaction_new') }}">New Voucher</a>
+</div>
+{% endif %}
+
+<!-- ============ quick actions ============ -->
+<div class="card mb-3">
+  <div class="card-body tight d-flex flex-wrap align-items-center gap-2">
+    <span class="hint me-2" style="font-weight:600">Quick actions</span>
+    <div class="quick-actions">
+      <a class="quick-action" href="{{ url_for('transaction_new') }}">{{ icon('plus') }} New Voucher</a>
+      <a class="quick-action" href="{{ url_for('adjustment_new') }}">{{ icon('sliders') }} New Adjustment</a>
+      <a class="quick-action" href="{{ url_for('journal') }}">{{ icon('book') }} Journal</a>
+      <a class="quick-action" href="{{ url_for('trial_balance_page') }}">{{ icon('scale') }} Trial Balance</a>
+      <a class="quick-action" href="{{ url_for('profit_loss_page') }}">{{ icon('trending') }} P&amp;L</a>
+      <a class="quick-action" href="{{ url_for('balance_sheet_page') }}">{{ icon('briefcase') }} Balance Sheet</a>
+      <a class="quick-action" href="{{ url_for('export_center') }}">{{ icon('download') }} Export</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============ charts ============ -->
+<div class="row g-3 mb-3">
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header">
+        <h3>Monthly Income vs Expenses vs Profit</h3>
+        <span class="spacer"></span>
+        <span class="hint">{{ period_label }}</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-box lg"><canvas id="chartMonthly"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header"><h3>Product Performance</h3></div>
+      <div class="card-body">
+        {% if chart_data.products %}
+          <div class="chart-box lg"><canvas id="chartProducts"></canvas></div>
+        {% else %}
+          {{ empty_state('No product data', 'Add products and record sales to see performance here.',
+                         'box', url_for('products'), 'Manage products') }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ recent activity ============ -->
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header">
+        <h3>Recent Transactions</h3>
+        <span class="spacer"></span>
+        <a class="btn btn-sm btn-ghost" href="{{ url_for('transactions') }}">View all</a>
+      </div>
+      <div class="table-wrap">
+        <table class="table table-stack align-middle">
+          <thead>
+            <tr><th>Date</th><th>Voucher</th><th>Description</th><th class="text-end">Amount</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+          {% for entry in recent %}
+            <tr>
+              <td data-label="Date">{{ entry.entry_date|dt }}</td>
+              <td data-label="Voucher"><a href="{{ url_for('transaction_view', entry_id=entry.id) }}">{{ entry.voucher_no }}</a></td>
+              <td data-label="Description">{{ entry.description or entry.entry_type }}</td>
+              <td class="num" data-label="Amount">{{ entry.total_debit|rs }}</td>
+              <td data-label="Status">{{ status_badge(entry.status) }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-4">
+              No transactions recorded yet.
+              <a href="{{ url_for('transaction_new') }}">Create the first voucher</a>.
+            </td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header"><h3>Latest Journal Entries</h3></div>
+      <div class="table-wrap">
+        <table class="table table-sm">
+          <thead><tr><th>Voucher</th><th>Type</th><th class="text-end">Debit</th><th class="text-end">Credit</th></tr></thead>
+          <tbody>
+          {% for entry in recent[:5] %}
+            <tr>
+              <td><a href="{{ url_for('transaction_view', entry_id=entry.id) }}">{{ entry.voucher_no }}</a></td>
+              <td class="hint">{{ entry.entry_type }}</td>
+              <td class="num">{{ entry.total_debit|rs }}</td>
+              <td class="num">{{ entry.total_credit|rs }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-3">No entries yet.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3>Pending Drafts</h3>
+        <span class="spacer"></span>
+        <span class="badge-soft badge-draft">{{ drafts|length }}</span>
+      </div>
+      <div class="card-body tight">
+        {% if drafts %}
+          <ul class="list-unstyled mb-0">
+            {% for d in drafts %}
+              <li class="d-flex justify-content-between align-items-center py-1 border-bottom" style="border-color:var(--line)!important">
+                <a href="{{ url_for('transaction_view', entry_id=d.id) }}">{{ d.voucher_no }}</a>
+                <span class="hint">{{ d.total_debit|rs }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="hint mb-0">No pending drafts. Everything is posted.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>Recent Adjustments</h3>
+        <span class="spacer"></span>
+        <a class="btn btn-sm btn-ghost" href="{{ url_for('adjustments') }}">All</a>
+      </div>
+      <div class="card-body tight">
+        {% if recent_adjustments %}
+          <ul class="list-unstyled mb-0">
+            {% for a in recent_adjustments %}
+              <li class="d-flex justify-content-between py-1 border-bottom" style="border-color:var(--line)!important">
+                <span>{{ a.adj_no }} <span class="hint">· {{ a.kind }}</span></span>
+                <span class="hint">{{ a.total_debit|rs }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="hint mb-0">No adjusting entries yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ period & counts ============ -->
+<div class="row g-3 mt-3">
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="stat-label mb-2">{{ icon('calendar') }} Financial period</div>
+        <div class="fw-bold" style="color:var(--navy)">{{ period_label }}</div>
+        <div class="hint mt-1">
+          Active period: {{ active_period.label if active_period else 'not set' }}<br>
+          Financial year: {{ business.fy_start|dt }} → {{ business.fy_end|dt }}<br>
+          Method: {{ business.accounting_method }} · Currency: {{ business.currency }}
+        </div>
+        <form method="post" action="{{ url_for('reset_period') }}" class="mt-2">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm btn-ghost" type="submit">Reset to active period</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="row text-center g-3">
+          <div class="col-6 col-md-3">
+            <div class="stat-label justify-content-center">Accounts</div>
+            <div class="stat-value">{{ counts.accounts }}</div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="stat-label justify-content-center">Vouchers</div>
+            <div class="stat-value">{{ counts.entries }}</div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="stat-label justify-content-center">Posted</div>
+            <div class="stat-value">{{ counts.posted }}</div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="stat-label justify-content-center">Adjustments</div>
+            <div class="stat-value">{{ counts.adjustments }}</div>
+          </div>
+        </div>
+        <div class="totals-strip mt-3">
+          <div class="item"><span>Statement check:</span>
+            <span class="{{ 'amount-pos' if summary.bs.is_balanced else 'amount-neg' }}">
+              Balance sheet {{ 'balances' if summary.bs.is_balanced else 'does not balance' }}
+              {% if not summary.bs.is_balanced %}(difference {{ summary.bs.difference|rs }}){% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+const DATA = {{ chart_data|tojson }};
+
+// ---- monthly income / expenses / profit ----
+(function () {
+  const el = document.getElementById("chartMonthly");
+  if (!el) return;
+  new Chart(el, {
+    type: "bar",
+    data: {
+      labels: DATA.labels,
+      datasets: [
+        { label: "Income", data: DATA.income, backgroundColor: "#2457D6", borderRadius: 6, maxBarThickness: 26 },
+        { label: "Expenses", data: DATA.expenses, backgroundColor: "#F0A03C", borderRadius: 6, maxBarThickness: 26 },
+        { label: "Profit", data: DATA.profit, type: "line", borderColor: "#12805C", backgroundColor: "rgba(18,128,92,.12)",
+          fill: true, tension: .35, pointRadius: 3, borderWidth: 2.5, yAxisID: "y" }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: "index", intersect: false },
+      plugins: { legend: { position: "bottom" }, tooltip: AP.tooltip },
+      scales: { x: AP.axis, y: AP.yAxis }
+    }
+  });
+})();
+
+// ---- product performance ----
+(function () {
+  const el = document.getElementById("chartProducts");
+  if (!el || !DATA.products.length) return;
+  new Chart(el, {
+    type: "doughnut",
+    data: {
+      labels: DATA.products,
+      datasets: [{
+        data: DATA.product_revenue,
+        backgroundColor: ["#2457D6", "#12805C", "#F0A03C", "#6C4AB6", "#0E9AA7", "#C0392B"],
+        borderWidth: 2, borderColor: "#fff", hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true, cutout: "62%",
+      plugins: {
+        legend: { position: "bottom", labels: { boxWidth: 10, padding: 12, font: { size: 10.5 } } },
+        tooltip: { ...AP.tooltip }
+      }
+    }
+  });
+})();
+</script>
+{% endblock %}

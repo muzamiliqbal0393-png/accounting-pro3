@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% block title %}New Adjustment{% endblock %}
+{% block page_title %}New Adjusting Entry{% endblock %}
+{% block crumb %}Transactions · Adjustment voucher{% endblock %}
+
+{% block content %}
+<form method="post" id="journal-form">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card mb-3">
+        <div class="card-header"><h3>Adjustment details</h3></div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-6 col-md-3">
+              <label class="form-label">Adjustment No.</label>
+              <input class="form-control" name="adj_no" value="{{ suggested_no }}">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label required">Date</label>
+              <input type="date" class="form-control" name="adj_date" required
+                     value="{{ period_end }}">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Adjustment Type</label>
+              <select class="form-select" name="kind" id="adjKind">
+                {% for k in adjustment_kinds %}<option value="{{ k }}">{{ k }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <input class="form-control" name="description" placeholder="e.g. Depreciation on furniture for the year">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Narration</label>
+              <input class="form-control" name="narration" placeholder="Working / explanation">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Adjustment lines</h3>
+          <span class="spacer"></span>
+          <button class="btn btn-sm btn-ghost" type="button" id="add-line">{{ icon('plus') }} Add line</button>
+        </div>
+        <div class="table-wrap">
+          <table class="table align-middle mb-0" id="line-table">
+            <thead><tr><th style="width:40%">Account</th><th class="text-end" style="width:18%">Debit</th>
+              <th class="text-end" style="width:18%">Credit</th><th>Description</th></tr></thead>
+            <tbody>
+              {% for i in line_rows %}
+                <tr data-line>
+                  <td><select class="form-select form-select-sm" name="account_id_{{ i }}">
+                      <option value="">— select account —</option>
+                      {% for a in accounts %}
+                        <option value="{{ a.id }}">{{ a.code }} · {{ a.name }} ({{ a.category }})</option>
+                      {% endfor %}
+                    </select></td>
+                  <td><input class="form-control form-control-sm text-end" name="debit_{{ i }}"
+                             data-field="debit" inputmode="decimal" placeholder="0.00"></td>
+                  <td><input class="form-control form-control-sm text-end" name="credit_{{ i }}"
+                             data-field="credit" inputmode="decimal" placeholder="0.00"></td>
+                  <td><input class="form-control form-control-sm" name="description_{{ i }}" placeholder="Optional"></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="card-body">
+          <div class="totals-strip">
+            <div class="item"><span>Total Debit</span><strong id="total-debit">Rs. 0.00</strong></div>
+            <div class="item"><span>Total Credit</span><strong id="total-credit">Rs. 0.00</strong></div>
+            <div class="item"><span>Difference</span><strong id="total-diff">Rs. 0.00</strong></div>
+            <div class="item ms-auto"><span class="status-pill bad" id="balance-status">Enter amounts</span></div>
+          </div>
+          <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-primary" type="submit" name="action" value="post" id="post-btn" disabled>
+              {{ icon('check') }} Post Adjustment</button>
+            <button class="btn btn-ghost" type="submit" name="action" value="draft">Save as Draft</button>
+            <a class="btn btn-ghost ms-auto" href="{{ url_for('adjustments') }}">Cancel</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-header"><h3>Adjustment guide</h3></div>
+        <div class="card-body">
+          <p class="hint">Each type follows double entry. The amounts are always yours — nothing is assumed.</p>
+          <div class="table-wrap">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Type</th><th>Debit</th><th>Credit</th></tr></thead>
+              <tbody>
+                {% for kind, pair in guide.items() %}
+                  <tr><td style="font-size:12px"><strong>{{ kind }}</strong></td>
+                    <td class="hint" style="font-size:11px">{{ pair[0] }}</td>
+                    <td class="hint" style="font-size:11px">{{ pair[1] }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

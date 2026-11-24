@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import empty_state %}
+{% block title %}Audit Log{% endblock %}
+{% block page_title %}Audit Log{% endblock %}
+{% block crumb %}System · Every action, with before/after values{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-12 col-md-4">
+        <label class="form-label">Filter by action</label>
+        <input class="form-control form-control-sm" name="action" value="{{ action }}"
+               placeholder="e.g. posted, imported, backup">
+      </div>
+      <div class="col-12 col-md-2"><button class="btn btn-primary btn-sm w-100">Filter</button></div>
+      <div class="col-12 col-md-2"><a class="btn btn-ghost btn-sm w-100" href="{{ url_for('audit_log') }}">Clear</a></div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>{{ pagination.total }} log entries</h3>
+    <span class="spacer"></span><span class="hint">Page {{ pagination.page }} of {{ pagination.pages }}</span></div>
+  <div class="table-wrap">
+    <table class="table table-stack align-middle">
+      <thead><tr><th>When</th><th>Action</th><th>Record</th><th>Previous</th><th>New</th><th>IP</th></tr></thead>
+      <tbody>
+        {% for log in pagination.items %}
+          <tr>
+            <td class="nowrap" data-label="When">{{ log.created_at|dt('%d %b %Y %H:%M') }}</td>
+            <td data-label="Action"><strong>{{ log.action }}</strong></td>
+            <td class="hint" data-label="Record">{{ log.record_type or '—' }}{% if log.record_id %} #{{ log.record_id }}{% endif %}</td>
+            <td class="hint" data-label="Previous" style="max-width:260px;word-break:break-word">{{ log.previous_values or '—' }}</td>
+            <td class="hint" data-label="New" style="max-width:260px;word-break:break-word">{{ log.new_values or '—' }}</td>
+            <td class="hint" data-label="IP">{{ log.ip_address or '—' }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6">{{ empty_state('No audit entries', 'Actions you take will be recorded here.', 'shield') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pagination.pages > 1 %}
+  <div class="pagination-bar">
+    <span class="hint">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+    <nav class="pages"><ul class="pagination pagination-sm mb-0">
+      <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+        <a class="page-link" href="{{ url_for('audit_log', page=pagination.prev_num, action=action) }}">Prev</a></li>
+      <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+        <a class="page-link" href="{{ url_for('audit_log', page=pagination.next_num, action=action) }}">Next</a></li>
+    </ul></nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/macros.html' import empty_state %}
+{% block title %}Inventory{% endblock %}
+{% block page_title %}Inventory Management{% endblock %}
+{% block crumb %}Inventory · Sales, purchases and stock movements{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="stat-card tone-asset">
+    <div class="stat-label">Stock Value</div><div class="stat-value">{{ summary.total_value|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-cash">
+    <div class="stat-label">Cost of Goods Sold</div><div class="stat-value">{{ summary.total_cogs|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-income">
+    <div class="stat-label">Sales Revenue</div><div class="stat-value">{{ summary.total_revenue|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-expense">
+    <div class="stat-label">Low Stock Items</div><div class="stat-value">{{ summary.low_stock|length }}</div></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-xl-5">
+    <div class="card mb-3">
+      <div class="card-header"><h3>Record a movement</h3></div>
+      <div class="card-body">
+        {% if summary.products %}
+        <form method="post">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Transaction type</label>
+              <select class="form-select" name="kind">
+                <option value="sale">Sale (out)</option>
+                <option value="purchase">Purchase (in)</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label required">Product</label>
+              <select class="form-select" name="product_id" required>
+                {% for p in summary.products %}
+                  <option value="{{ p.id }}">{{ p.code }} · {{ p.name }} (stock {{ p.available_stock }})</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6"><label class="form-label required">Quantity</label>
+              <input class="form-control" name="quantity" inputmode="numeric" required value="1"></div>
+            <div class="col-6"><label class="form-label required">Rate</label>
+              <input class="form-control" name="rate" inputmode="decimal" required placeholder="0.00"></div>
+            <div class="col-6"><label class="form-label">Date</label>
+              <input type="date" class="form-control" name="txn_date" value="{{ default_date }}"></div>
+            <div class="col-6"><label class="form-label">Discount</label>
+              <input class="form-control" name="discount" inputmode="decimal" placeholder="0.00"></div>
+            <div class="col-6"><label class="form-label">Party / customer</label>
+              <input class="form-control" name="party" placeholder="Customer or supplier"></div>
+            <div class="col-6"><label class="form-label">Document no.</label>
+              <input class="form-control" name="document_no"></div>
+            <div class="col-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="post_journal" id="pj" checked>
+                <label class="form-check-label" for="pj">Create matching journal draft</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <button class="btn btn-primary w-100" type="submit">{{ icon('check') }} Record movement</button>
+            </div>
+          </div>
+        </form>
+        {% else %}
+          {{ empty_state('Add a product first', 'Inventory movements need at least one product.',
+                         'box', url_for('products'), 'Go to products') }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-7">
+    <div class="card mb-3">
+      <div class="card-header"><h3>Stock status</h3></div>
+      <div class="table-wrap">
+        <table class="table table-sm table-stack">
+          <thead><tr><th>Product</th><th class="text-end">Opening</th><th class="text-end">Purchased</th>
+            <th class="text-end">Sold</th><th class="text-end">Returns</th><th class="text-end">Available</th>
+            <th class="text-end">Value</th></tr></thead>
+          <tbody>
+            {% for p in summary.products %}
+              <tr>
+                <td data-label="Product">{{ p.name }}
+                  {% if p.is_low_stock %}<span class="badge-soft badge-draft">low</span>{% endif %}</td>
+                <td class="num" data-label="Opening">{{ p.opening_qty }}</td>
+                <td class="num" data-label="Purchased">{{ p.purchase_qty }}</td>
+                <td class="num" data-label="Sold">{{ p.sold_qty }}</td>
+                <td class="num" data-label="Returns">{{ p.sales_returns + p.purchase_returns }}</td>
+                <td class="num" data-label="Available"><strong>{{ p.available_stock }}</strong></td>
+                <td class="num" data-label="Value">{{ p.stock_value|rs }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="7" class="text-center text-muted py-4">No products yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>Recent stock movements</h3></div>
+      <div class="table-wrap">
+        <table class="table table-sm">
+          <thead><tr><th>Date</th><th>Product</th><th>Type</th><th class="text-end">Qty</th>
+            <th class="text-end">Rate</th><th class="text-end">Amount</th></tr></thead>
+          <tbody>
+            {% for t in txns %}
+              <tr>
+                <td class="nowrap">{{ t.txn_date|dt }}</td>
+                <td>{{ products_map[t.product_id].name if t.product_id in products_map else '—' }}</td>
+                <td><span class="badge-soft {{ 'badge-posted' if t.txn_type == 'Sale' else 'badge-info' }}">{{ t.txn_type }}</span></td>
+                <td class="num">{{ t.quantity }}</td>
+                <td class="num">{{ t.rate|rs }}</td>
+                <td class="num">{{ t.amount|rs }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="6" class="text-center text-muted py-4">No stock movements recorded.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

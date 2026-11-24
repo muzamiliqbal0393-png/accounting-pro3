@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/macros.html' import empty_state %}
+{% block title %}General Ledger{% endblock %}
+{% block page_title %}General Ledger{% endblock %}
+{% block crumb %}Reports · Account-wise ledger with running balance{% endblock %}
+
+{% block content %}
+<div class="card mb-3 no-print">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-12 col-md-4">
+        <label class="form-label">Account</label>
+        <select class="form-select form-select-sm" name="account_id" required>
+          <option value="">— select an account —</option>
+          {% for a in accounts %}
+            <option value="{{ a.id }}" {{ 'selected' if account_id == a.id }}>
+              {{ a.code }} · {{ a.name }} ({{ a.category }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label">From</label>
+        <input type="date" class="form-control form-control-sm" name="start" value="{{ period_start }}">
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label">To</label>
+        <input type="date" class="form-control form-control-sm" name="end" value="{{ period_end }}">
+      </div>
+      <div class="col-12 col-md-2">
+        <button class="btn btn-primary btn-sm w-100" type="submit">Show ledger</button>
+      </div>
+    </form>
+    {% if account %}
+    <div class="d-flex flex-wrap gap-2 mt-3">
+      <button class="btn btn-sm btn-ghost" type="button" data-print>{{ icon('printer') }} Print</button>
+      <a class="btn btn-sm btn-ghost"
+         href="{{ url_for('export_report', fmt='pdf', report_name='general_ledger', account_id=account.id) }}">PDF</a>
+      <a class="btn btn-sm btn-ghost"
+         href="{{ url_for('export_report', fmt='word', report_name='general_ledger', account_id=account.id) }}">Word</a>
+      <a class="btn btn-sm btn-ghost"
+         href="{{ url_for('export_report', fmt='excel', report_name='general_ledger', account_id=account.id) }}">Excel</a>
+      <span class="ms-auto hint align-self-center">Period: {{ period_label }}</span>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if not account %}
+  <div class="card"><div class="card-body">
+    {{ empty_state('Select an account',
+       'Choose an account above to view its ledger, opening balance, movements and closing balance.', 'file-text') }}
+  </div></div>
+{% else %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h3>{{ account.code }} · {{ account.name }}</h3>
+      <div class="hint">{{ account.category }} · {{ account.subcategory_label }} ·
+        Normal balance: {{ account.normal_balance }}</div>
+    </div>
+    <span class="spacer"></span>
+    <a class="btn btn-sm btn-ghost" href="{{ url_for('accounts') }}">All accounts</a>
+  </div>
+  <div class="table-wrap">
+    <table class="table table-stack align-middle">
+      <thead>
+        <tr>
+          <th>Date</th><th>Particulars</th><th>Voucher</th><th>Source</th>
+          <th class="text-end">Debit</th><th class="text-end">Credit</th><th class="text-end">Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background:#f7f9fd">
+          <td colspan="6"><strong>Opening Balance</strong></td>
+          <td class="num"><strong>{{ report.opening|rs }} {{ report.opening_side }}</strong></td>
+        </tr>
+        {% for r in report.rows %}
+          <tr>
+            <td class="nowrap" data-label="Date">{{ r.date|dt }}</td>
+            <td data-label="Particulars">{{ r.particulars }}</td>
+            <td data-label="Voucher">{{ r.voucher_no }}</td>
+            <td class="hint" data-label="Source">{{ r.source }}</td>
+            <td class="num" data-label="Debit">{{ r.debit|rs if r.debit else '' }}</td>
+            <td class="num" data-label="Credit">{{ r.credit|rs if r.credit else '' }}</td>
+            <td class="num" data-label="Balance">{{ r.balance|rs }} <span class="hint">{{ r.balance_side }}</span></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="text-center text-muted py-4">
+            No movements in this period — only the opening balance applies.</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="row-total">
+          <td colspan="4">Totals</td>
+          <td class="num">{{ report.total_debit|rs }}</td>
+          <td class="num">{{ report.total_credit|rs }}</td>
+          <td class="num">{{ report.closing|rs }} {{ report.closing_side }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <div class="card-body">
+    <div class="totals-strip">
+      <div class="item"><span>Opening:</span><strong>{{ report.opening|rs }} {{ report.opening_side }}</strong></div>
+      <div class="item"><span>Closing:</span><strong>{{ report.closing|rs }} {{ report.closing_side }}</strong></div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

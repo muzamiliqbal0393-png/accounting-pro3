@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% block title %}Backup &amp; Restore{% endblock %}
+{% block page_title %}Database Backup &amp; Restore{% endblock %}
+{% block crumb %}System · Protect your accounting data{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card mb-3">
+      <div class="card-header"><h3>Download a backup</h3></div>
+      <div class="card-body">
+        <p class="hint">Downloads a complete copy of the SQLite database, including all users,
+          businesses, vouchers, adjustments, products and audit records.</p>
+        <div class="totals-strip mb-3">
+          <div class="item"><span>Current database size:</span><strong>{{ db_size }} KB</strong></div>
+        </div>
+        <a class="btn btn-primary btn-icon" href="{{ url_for('backup_download') }}">
+          {{ icon('download') }} Download database backup</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>Restore from a backup</h3></div>
+      <div class="card-body">
+        <div class="alert alert-warning py-2 px-3" style="font-size:12.5px">
+          Restoring <strong>replaces</strong> the current database. A safety copy of the existing database is
+          saved automatically before the restore.
+        </div>
+        <form method="post" action="{{ url_for('backup_restore') }}" enctype="multipart/form-data"
+              data-confirm="Restore this backup and replace the current database? You will be signed out.">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label class="form-label required">Backup file (.db)</label>
+            <input class="form-control" type="file" name="file" accept=".db" required>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="confirm" value="yes" id="confirmRestore" required>
+            <label class="form-check-label" for="confirmRestore">
+              I understand this replaces all current data
+            </label>
+          </div>
+          <button class="btn btn-ghost text-danger btn-icon" type="submit">
+            {{ icon('database') }} Validate &amp; restore</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header"><h3>Saved backups</h3>
+        <span class="spacer"></span><span class="hint">{{ files|length }} file(s)</span></div>
+      <div class="table-wrap">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>File</th><th class="text-end">Size</th><th>Created</th></tr></thead>
+          <tbody>
+            {% for f in files %}
+              <tr>
+                <td style="word-break:break-all">{{ f.name }}</td>
+                <td class="num">{{ f.size }} KB</td>
+                <td class="hint nowrap">{{ f.modified|dt('%d %b %Y %H:%M') }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="3" class="text-center text-muted py-4">No backups stored yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="card-body">
+        <p class="hint mb-0">Backups are stored in <code>uploads/backups/</code>. Download them to your own
+          device for safe keeping.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

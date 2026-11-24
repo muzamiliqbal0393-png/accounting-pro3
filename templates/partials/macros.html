@@ -1,0 +1,158 @@
+{# ------------------------------------------------------------------
+   Shared UI macros
+   ------------------------------------------------------------------ #}
+{% macro status_badge(status) -%}
+  {% if status == 'posted' %}<span class="badge-soft badge-posted">Posted</span>
+  {% elif status == 'draft' %}<span class="badge-soft badge-draft">Draft</span>
+  {% elif status == 'reversed' %}<span class="badge-soft badge-reversed">Reversed</span>
+  {% else %}<span class="badge-soft badge-neutral">{{ status }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro empty_state(title, message, icon_name='file', action_url=None, action_label=None) -%}
+  {% from 'partials/icons.html' import icon %}
+  <div class="empty-state">
+    <div class="icon">{{ icon(icon_name) }}</div>
+    <h3>{{ title }}</h3>
+    <p>{{ message }}</p>
+    {% if action_url %}<a class="btn btn-primary btn-sm" href="{{ action_url }}">{{ action_label }}</a>{% endif %}
+  </div>
+{%- endmacro %}
+
+{% macro money_cell(value, bold=False) -%}
+  <td class="num {{ 'fw-bold' if bold }}">{{ value|rs }}</td>
+{%- endmacro %}
+
+{# Render a generic report section (used by every financial report page) #}
+{% macro report_section(section) -%}
+<div class="mb-4">
+  {% if section.title %}<h3 class="mb-2" style="font-size:.95rem">{{ section.title }}</h3>{% endif %}
+  <div class="table-wrap">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          {% for col in section.columns %}
+            <th class="{{ 'text-end' if col.align == 'right' }}">{{ col.label }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in section.rows %}
+          <tr>
+            {% for col in section.columns %}
+              {% set value = row.get(col.key) %}
+              <td class="{{ 'num' if col.align == 'right' }}" data-label="{{ col.label }}">
+                {% if col.type == 'money' %}
+                  {% if value is none %}<span class="text-muted">-</span>{% else %}{{ value|rs }}{% endif %}
+                {% elif col.type == 'date' %}
+                  {{ value|dt }}
+                {% else %}
+                  {{ value if value is not none else '' }}
+                {% endif %}
+              </td>
+            {% endfor %}
+          </tr>
+        {% else %}
+          <tr><td colspan="{{ section.columns|length }}" class="text-center text-muted py-3">
+            {{ section.empty or 'No data available for this period.' }}</td></tr>
+        {% endfor %}
+      </tbody>
+      {% set totals = section.get('totals_multi') or section.get('totals') %}
+      {% if totals %}
+      <tfoot>
+        <tr class="row-total">
+          {% for col in section.columns %}
+            <td class="{{ 'num' if col.align == 'right' }}">
+              {% if col.type == 'money' %}
+                {% if totals.get(col.key) is not none %}{{ totals.get(col.key)|rs }}{% endif %}
+              {% elif loop.first %}{{ totals.get('label', 'Total') }}{% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+  {% if section.status or section.result or section.note %}
+    <div class="d-flex flex-wrap gap-3 align-items-center mt-2">
+      {% if section.status %}
+        <span class="status-pill {{ 'ok' if 'Balanced' in section.status else 'bad' }}">
+          {{ section.status }}
+        </span>
+      {% endif %}
+      {% if section.result %}
+        <span class="hint"><strong>{{ section.result.label }}:</strong> {{ section.result.amount|rs }}</span>
+      {% endif %}
+    </div>
+  {% endif %}
+  {% if section.note %}
+    <div class="alert alert-warning mt-2 mb-0 py-2 px-3" style="font-size:12px">{{ section.note }}</div>
+  {% endif %}
+</div>
+{%- endmacro %}
+
+{# Two-sided ledger layout (Trading / P&L) #}
+{% macro two_side(title, debit_items, credit_items, total_debit, total_credit, result=None) -%}
+<div class="card">
+  <div class="card-header"><h3>{{ title }}</h3></div>
+  <div class="card-body p-0">
+    <div class="table-wrap">
+      <table class="table table-sm mb-0">
+        <thead>
+          <tr>
+            <th style="width:34%">Particulars (Dr.)</th><th class="text-end" style="width:16%">Amount</th>
+            <th style="width:34%">Particulars (Cr.)</th><th class="text-end" style="width:16%">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set rows = debit_items|length if debit_items|length > credit_items|length else credit_items|length %}
+          {% for i in range(rows) %}
+            {% set d = debit_items[i] if i < debit_items|length else None %}
+            {% set c = credit_items[i] if i < credit_items|length else None %}
+            <tr>
+              <td class="{{ 'fw-bold' if d and d.emphasis }}">{{ d.label if d else '' }}</td>
+              <td class="num {{ 'fw-bold' if d and d.emphasis }}">
+                {% if d and d.amount is not none %}{{ d.amount|rs }}{% endif %}</td>
+              <td class="{{ 'fw-bold' if c and c.emphasis }}">{{ c.label if c else '' }}</td>
+              <td class="num {{ 'fw-bold' if c and c.emphasis }}">
+                {% if c and c.amount is not none %}{{ c.amount|rs }}{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="row-total">
+            <td>Total</td><td class="num">{{ total_debit|rs }}</td>
+            <td>Total</td><td class="num">{{ total_credit|rs }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+  {% if result %}
+  <div class="card-body pt-0">
+    <div class="totals-strip">
+      <div class="item"><span>{{ result.label }}:</span><span>{{ result.amount|rs }}</span></div>
+      <div class="item"><span>Debit total:</span><span>{{ total_debit|rs }}</span></div>
+      <div class="item"><span>Credit total:</span><span>{{ total_credit|rs }}</span></div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{%- endmacro %}
+
+{# Filter bar: date range + optional extra fields #}
+{% macro period_filter(action_url, start, end, extra_hidden={}) -%}
+<form method="get" action="{{ action_url }}" class="row g-2 align-items-end no-print">
+  {% for k, v in extra_hidden.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+  <div class="col-6 col-md-3">
+    <label class="form-label">From</label>
+    <input type="date" name="start" class="form-control form-control-sm" value="{{ start }}">
+  </div>
+  <div class="col-6 col-md-3">
+    <label class="form-label">To</label>
+    <input type="date" name="end" class="form-control form-control-sm" value="{{ end }}">
+  </div>
+  <div class="col-12 col-md-2">
+    <button class="btn btn-primary btn-sm w-100" type="submit">Apply</button>
+  </div>
+</form>
+{%- endmacro %}

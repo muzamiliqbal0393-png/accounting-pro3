@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/macros.html' import empty_state %}
+{% block title %}General Journal{% endblock %}
+{% block page_title %}General Journal{% endblock %}
+{% block crumb %}Reports · Posted vouchers with running totals{% endblock %}
+
+{% block content %}
+<div class="card mb-3 no-print">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-6 col-md-2">
+        <label class="form-label">From</label>
+        <input type="date" class="form-control form-control-sm" name="start" value="{{ period_start }}">
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label">To</label>
+        <input type="date" class="form-control form-control-sm" name="end" value="{{ period_end }}">
+      </div>
+      <div class="col-12 col-md-3">
+        <label class="form-label">Account</label>
+        <select class="form-select form-select-sm" name="account_id">
+          <option value="">All accounts</option>
+          {% for a in accounts %}
+            <option value="{{ a.id }}" {{ 'selected' if account_id == a.id }}>{{ a.code }} · {{ a.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label">Search</label>
+        <input class="form-control form-control-sm" name="q" value="{{ search }}" placeholder="Text">
+      </div>
+      <div class="col-6 col-md-3 d-flex gap-2">
+        <button class="btn btn-primary btn-sm flex-grow-1" type="submit">Apply</button>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('journal') }}">Clear</a>
+      </div>
+    </form>
+    <div class="d-flex flex-wrap gap-2 mt-3">
+      <button class="btn btn-sm btn-ghost" type="button" data-print>{{ icon('printer') }} Print</button>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='pdf', report_name='general_journal') }}">PDF</a>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='word', report_name='general_journal') }}">Word</a>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='excel', report_name='general_journal') }}">Excel</a>
+      <span class="ms-auto hint align-self-center">Period: {{ period_label }}</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Journal entries</h3>
+    <span class="spacer"></span>
+    <span class="hint">{{ data.rows|length }} lines</span>
+  </div>
+  <div class="table-wrap">
+    <table class="table table-stack align-middle">
+      <thead>
+        <tr>
+          <th>Date</th><th>Voucher</th><th>Account</th><th>Description</th>
+          <th class="text-end">Debit (Rs.)</th><th class="text-end">Credit (Rs.)</th><th>Narration</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in data.rows %}
+        <tr>
+          <td class="nowrap" data-label="Date">{{ r.date|dt }}</td>
+          <td data-label="Voucher"><a href="{{ url_for('transaction_view', entry_id=r.entry_id) }}">{{ r.voucher_no }}</a></td>
+          <td data-label="Account"><span class="code">{{ r.account_code }}</span> {{ r.account_name }}</td>
+          <td data-label="Description">{{ r.description or '—' }}</td>
+          <td class="num" data-label="Debit">{{ r.debit|rs if r.debit else '' }}</td>
+          <td class="num" data-label="Credit">{{ r.credit|rs if r.credit else '' }}</td>
+          <td class="hint" data-label="Narration">{{ r.narration or '' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7">
+          {{ empty_state('No journal entries',
+             'No posted vouchers fall inside ' ~ period_label ~ '. Record a voucher or widen the date range.',
+             'book', url_for('transaction_new'), 'New Voucher') }}
+        </td></tr>
+      {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="row-total">
+          <td colspan="4">Total</td>
+          <td class="num">{{ data.total_debit|rs }}</td>
+          <td class="num">{{ data.total_credit|rs }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <div class="card-body">
+    <div class="totals-strip">
+      <div class="item"><span>Total debit:</span><strong>{{ data.total_debit|rs }}</strong></div>
+      <div class="item"><span>Total credit:</span><strong>{{ data.total_credit|rs }}</strong></div>
+      <div class="item"><span>Difference:</span>
+        <strong class="{{ 'amount-pos' if data.difference == 0 else 'amount-neg' }}">{{ data.difference|rs }}</strong>
+      </div>
+      <div class="item ms-auto">
+        <span class="status-pill {{ 'ok' if data.difference == 0 else 'bad' }}">
+          {{ 'Balanced' if data.difference == 0 else 'Not balanced' }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

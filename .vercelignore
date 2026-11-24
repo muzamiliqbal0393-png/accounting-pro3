@@ -1,0 +1,12 @@
+# never ship local runtime state / heavy dev artefacts to Vercel
+tests/
+screenshots/
+uploads/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.git/
+seed_demo.py
+reset_db.py

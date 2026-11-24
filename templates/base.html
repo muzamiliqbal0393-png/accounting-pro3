@@ -1,0 +1,175 @@
+{% from 'partials/icons.html' import icon %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101D3A">
+  <meta name="description" content="ACCOUNTING PRO - Complete Computerized Accounting & Business Management System">
+  <title>{% block title %}{{ app_name }}{% endblock %} · {{ app_name }}</title>
+  <link rel="manifest" href="{{ url_for('manifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+{% if current_user %}
+<div class="app-shell">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">AP</div>
+      <div class="brand-text">
+        <strong>ACCOUNTING PRO</strong>
+        <span>Business Management</span>
+      </div>
+    </div>
+
+    {% set ep = request.endpoint %}
+    <nav class="pb-3">
+      <div class="nav-section">
+        <div class="nav-section-title">Overview</div>
+        <a class="nav-link {{ 'active' if ep == 'dashboard' }}" href="{{ url_for('dashboard') }}">{{ icon('grid') }} Dashboard</a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Setup</div>
+        <a class="nav-link {{ 'active' if ep in ['business_profile', 'add_period', 'activate_period'] }}" href="{{ url_for('business_profile') }}">{{ icon('building') }} Business Profile</a>
+        <a class="nav-link {{ 'active' if ep in ['accounts', 'account_create', 'account_edit'] }}" href="{{ url_for('accounts') }}">{{ icon('layers') }} Chart of Accounts</a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Transactions</div>
+        <a class="nav-link {{ 'active' if ep == 'transaction_new' }}" href="{{ url_for('transaction_new') }}">{{ icon('plus') }} New Voucher</a>
+        <a class="nav-link {{ 'active' if ep in ['transactions', 'transaction_view', 'transaction_edit'] }}" href="{{ url_for('transactions') }}">{{ icon('list') }} All Transactions</a>
+        <a class="nav-link {{ 'active' if ep == 'journal' }}" href="{{ url_for('journal') }}">{{ icon('book') }} General Journal</a>
+        <a class="nav-link {{ 'active' if ep in ['adjustments', 'adjustment_new'] }}" href="{{ url_for('adjustments') }}">{{ icon('sliders') }} Adjusting Entries</a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Financial Statements</div>
+        <a class="nav-link {{ 'active' if ep == 'ledger' }}" href="{{ url_for('ledger') }}">{{ icon('file-text') }} General Ledger</a>
+        <a class="nav-link {{ 'active' if ep in ['trial_balance_page', 'trial_balance_manual'] }}" href="{{ url_for('trial_balance_page') }}">{{ icon('scale') }} Trial Balance</a>
+        <a class="nav-link {{ 'active' if ep == 'adjusted_trial_balance_page' }}" href="{{ url_for('adjusted_trial_balance_page') }}">{{ icon('scale') }} Adjusted Trial Balance</a>
+        <a class="nav-link {{ 'active' if ep == 'trading_account_page' }}" href="{{ url_for('trading_account_page') }}">{{ icon('chart') }} Trading Account</a>
+        <a class="nav-link {{ 'active' if ep == 'profit_loss_page' }}" href="{{ url_for('profit_loss_page') }}">{{ icon('trending') }} Profit &amp; Loss</a>
+        <a class="nav-link {{ 'active' if ep == 'balance_sheet_page' }}" href="{{ url_for('balance_sheet_page') }}">{{ icon('briefcase') }} Balance Sheet</a>
+        <a class="nav-link {{ 'active' if ep == 'closing_entries_page' }}" href="{{ url_for('closing_entries_page') }}">{{ icon('lock') }} Closing Entries</a>
+        <a class="nav-link {{ 'active' if ep == 'post_closing_tb_page' }}" href="{{ url_for('post_closing_tb_page') }}">{{ icon('check') }} Post-Closing TB</a>
+        <a class="nav-link {{ 'active' if ep == 'cash_flow_page' }}" href="{{ url_for('cash_flow_page') }}">{{ icon('activity') }} Cash Flow</a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Analysis &amp; Inventory</div>
+        <a class="nav-link {{ 'active' if ep == 'analysis_page' }}" href="{{ url_for('analysis_page') }}">{{ icon('pie') }} Business Analysis</a>
+        <a class="nav-link {{ 'active' if ep == 'budgets' }}" href="{{ url_for('budgets') }}">{{ icon('target') }} Budgets</a>
+        <a class="nav-link {{ 'active' if ep == 'products' }}" href="{{ url_for('products') }}">{{ icon('box') }} Products</a>
+        <a class="nav-link {{ 'active' if ep == 'inventory' }}" href="{{ url_for('inventory') }}">{{ icon('database') }} Inventory</a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Data &amp; System</div>
+        <a class="nav-link {{ 'active' if ep in ['import_center', 'import_preview'] }}" href="{{ url_for('import_center') }}">{{ icon('upload') }} Import Center</a>
+        <a class="nav-link {{ 'active' if ep == 'export_center' }}" href="{{ url_for('export_center') }}">{{ icon('download') }} Export Center</a>
+        <a class="nav-link {{ 'active' if ep == 'audit_log' }}" href="{{ url_for('audit_log') }}">{{ icon('shield') }} Audit Log</a>
+        <a class="nav-link {{ 'active' if ep == 'backup_page' }}" href="{{ url_for('backup_page') }}">{{ icon('database') }} Backup &amp; Restore</a>
+        <a class="nav-link {{ 'active' if ep == 'settings' }}" href="{{ url_for('settings') }}">{{ icon('settings') }} Settings</a>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar">{{ (current_user.name or 'U')[0]|upper }}</div>
+        <div class="meta">
+          <strong>{{ current_user.name }}</strong>
+          <span>{{ business.name or 'No business set up' }}</span>
+        </div>
+      </div>
+      <form method="post" action="{{ url_for('logout') }}" class="mt-2">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-sm w-100 btn-ghost btn-icon" type="submit">{{ icon('logout') }} Sign out</button>
+      </form>
+    </div>
+  </aside>
+  <div class="sidebar-backdrop"></div>
+
+  <!-- ================= MAIN ================= -->
+  <div class="main-wrap">
+    <header class="topbar">
+      <button class="hamburger" type="button" aria-label="Open navigation">{{ icon('menu') }}</button>
+      <div class="page-heading">
+        <div class="crumb">{% block crumb %}Dashboard{% endblock %}</div>
+        <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+      </div>
+      <div class="topbar-actions">
+        <form method="post" action="{{ url_for('set_period') }}" class="d-none d-lg-flex align-items-end gap-2">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <div>
+            <label class="form-label mb-0" style="font-size:10px">Period from</label>
+            <input type="date" name="start" class="form-control form-control-sm" value="{{ period_start }}">
+          </div>
+          <div>
+            <label class="form-label mb-0" style="font-size:10px">to</label>
+            <input type="date" name="end" class="form-control form-control-sm" value="{{ period_end }}">
+          </div>
+          <button class="btn btn-sm btn-ghost" type="submit" title="Apply period">{{ icon('check') }}</button>
+        </form>
+        <a class="btn btn-sm btn-primary btn-icon d-none d-md-inline-flex"
+           href="{{ url_for('transaction_new') }}">{{ icon('plus') }} New Voucher</a>
+        <div class="dropdown">
+          <button class="btn btn-sm btn-ghost dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            {{ current_user.name.split(' ')[0] }}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="{{ url_for('settings') }}">Settings</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('business_profile') }}">Business Profile</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <form method="post" action="{{ url_for('logout') }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <button class="dropdown-item" type="submit">Sign out</button>
+              </form>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="content-inner">
+        {% if not business.name and request.endpoint != 'business_profile' %}
+        <div class="alert alert-info d-flex flex-wrap align-items-center gap-2">
+          {{ icon('info') }}
+          <span><strong>Set up your business profile</strong> to unlock the full dashboard and reports.</span>
+          <a class="btn btn-sm btn-primary ms-auto" href="{{ url_for('business_profile') }}">Complete setup</a>
+        </div>
+        {% endif %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="mb-3">
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'info' }} d-flex align-items-start gap-2" data-autohide>
+                  <div class="flex-grow-1">{{ message }}</div>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+</div>
+{% else %}
+  {% block auth %}{% endblock %}
+{% endif %}
+
+<script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

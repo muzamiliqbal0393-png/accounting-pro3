@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/macros.html' import empty_state %}
+{% block title %}Cash Flow{% endblock %}
+{% block page_title %}Cash Flow Statement{% endblock %}
+{% block crumb %}Reports · Cash &amp; bank movements classified{% endblock %}
+
+{% block content %}
+<div class="card mb-3 no-print">
+  <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-6 col-md-4"><label class="form-label">From</label>
+        <input type="date" class="form-control form-control-sm" name="start" value="{{ period_start }}"></div>
+      <div class="col-6 col-md-4"><label class="form-label">To</label>
+        <input type="date" class="form-control form-control-sm" name="end" value="{{ period_end }}"></div>
+      <div class="col-12 col-md-4"><button class="btn btn-primary btn-sm w-100">Apply</button></div>
+    </form>
+    <div class="ms-auto d-flex flex-wrap gap-2">
+      <button class="btn btn-sm btn-ghost" type="button" data-print>{{ icon('printer') }} Print</button>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='pdf', report_name='cash_flow') }}">PDF</a>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='excel', report_name='cash_flow') }}">Excel</a>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="stat-card tone-cash">
+    <div class="stat-label">Opening Cash &amp; Bank</div><div class="stat-value">{{ cf.opening|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-asset">
+    <div class="stat-label">Net Cash Flow</div>
+    <div class="stat-value {{ 'neg' if cf.net_change|neg }}">{{ cf.net_change|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-income">
+    <div class="stat-label">Total Inflows</div><div class="stat-value">{{ cf.inflow|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-expense">
+    <div class="stat-label">Closing Cash &amp; Bank</div><div class="stat-value">{{ cf.closing|rs }}</div></div></div>
+</div>
+
+{% if cf.accounts|length == 0 %}
+  <div class="alert alert-warning">No cash or bank accounts exist. Add an account with the
+    "Cash in Hand" or "Bank" subcategory to build a cash flow statement.</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header"><h3>Cash Flow Statement for {{ period_label }}</h3></div>
+  <div class="card-body p-0">
+    <div class="table-wrap">
+      <table class="table table-sm mb-0">
+        <tbody>
+          <tr class="row-total"><td>Opening Cash &amp; Bank Balance</td>
+            <td class="num" style="width:22%">{{ cf.opening|rs }}</td></tr>
+          {% for bucket in ['Operating', 'Investing', 'Financing'] %}
+            {% set amount = cf.operating if bucket == 'Operating' else (cf.investing if bucket == 'Investing' else cf.financing) %}
+            <tr style="background:#f7f9fd"><td colspan="2"><strong>Cash flows from {{ bucket }} Activities</strong></td></tr>
+            {% for d in cf.details[bucket] %}
+              <tr><td class="ps-4">{{ d.date|dt }} · {{ d.voucher_no }} · {{ d.particulars }}</td>
+                <td class="num {{ 'amount-pos' if d.amount > 0 else 'amount-neg' }}">{{ d.amount|rs }}</td></tr>
+            {% else %}
+              <tr><td class="ps-4 text-muted">No {{ bucket|lower }} cash movements.</td><td class="num">-</td></tr>
+            {% endfor %}
+            <tr><td class="fw-bold ps-3">Net cash from {{ bucket|lower }} activities</td>
+              <td class="num fw-bold">{{ amount|rs }}</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="row-total"><td>Net Increase / (Decrease) in Cash</td>
+            <td class="num">{{ cf.net_change|rs }}</td></tr>
+          <tr class="row-total"><td>Closing Cash &amp; Bank Balance</td>
+            <td class="num">{{ cf.closing|rs }}</td></tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="totals-strip">
+      <div class="item"><span>Reconciles with ledger cash balance:</span>
+        <span class="status-pill {{ 'ok' if cf.reconciles else 'bad' }}">{{ 'Yes' if cf.reconciles else 'Check data' }}</span>
+      </div>
+      <div class="item"><span>Cash &amp; bank accounts:</span>
+        <strong>{{ cf.accounts|map(attribute='name')|join(', ') if cf.accounts else 'none' }}</strong></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

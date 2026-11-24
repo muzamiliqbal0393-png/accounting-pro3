@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% block title %}Import Center{% endblock %}
+{% block page_title %}Import Center{% endblock %}
+{% block crumb %}Data · Excel &amp; CSV import with validation{% endblock %}
+
+{% block content %}
+<div class="alert alert-info">
+  Imports are validated before anything is written: duplicate voucher numbers, invalid dates,
+  missing accounts, negative amounts and unbalanced vouchers are all flagged for review.
+  Nothing is overwritten without your confirmation.
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><h3>1 · Choose what to import</h3></div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('import_upload') }}" enctype="multipart/form-data">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label class="form-label required">Import type</label>
+            <select class="form-select" name="kind" required>
+              {% for key, spec in kinds.items() %}
+                <option value="{{ key }}">{{ spec.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label required">File (.xlsx, .xls or .csv)</label>
+            <input class="form-control" type="file" name="file" accept=".xlsx,.xls,.csv" required>
+            <div class="form-text">Maximum 8 MB. The first row must contain column headings.</div>
+          </div>
+          <button class="btn btn-primary w-100" type="submit">{{ icon('upload') }} Upload &amp; preview</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><h3>Expected columns</h3></div>
+      <div class="card-body p-0">
+        <div class="table-wrap">
+          <table class="table table-sm mb-0">
+            <thead><tr><th>Import type</th><th>Required &amp; optional columns</th></tr></thead>
+            <tbody>
+              {% for key, spec in kinds.items() %}
+                <tr>
+                  <td><strong>{{ spec.title }}</strong></td>
+                  <td>
+                    {% for field, label, required in spec.fields %}
+                      <span class="badge-soft {{ 'badge-info' if required else 'badge-neutral' }}"
+                            style="margin:2px 2px 0 0">{{ label }}{{ '' if required else ' (opt)' }}</span>
+                    {% endfor %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="hint mb-0">Column headings are matched automatically; you can remap them on the next
+          screen. Journal rows must balance per voucher number.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

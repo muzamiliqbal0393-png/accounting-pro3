@@ -1,0 +1,21 @@
+{% extends 'base.html' if current_user else 'auth_base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block crumb %}Error {{ code }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-body text-center py-5">
+    <div class="stat-icon mx-auto mb-3" style="position:static;width:52px;height:52px">
+      <strong style="font-size:16px">{{ code }}</strong>
+    </div>
+    <h2 class="mb-2">{{ title }}</h2>
+    <p class="text-muted">{{ message }}</p>
+    <div class="d-flex gap-2 justify-content-center mt-3">
+      <a class="btn btn-primary btn-sm" href="{{ url_for('dashboard') if current_user else url_for('login') }}">
+        {{ 'Back to dashboard' if current_user else 'Sign in' }}
+      </a>
+      <a class="btn btn-ghost btn-sm" href="javascript:history.back()">Go back</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

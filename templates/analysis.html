@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% block title %}Business Analysis{% endblock %}
+{% block page_title %}Business Analysis{% endblock %}
+{% block crumb %}Analytics · Period comparisons and growth{% endblock %}
+
+{% block content %}
+<div class="card mb-3 no-print">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-6 col-md-3">
+        <label class="form-label">Granularity</label>
+        <select class="form-select form-select-sm" name="grain">
+          {% for g, label in [('daily','Daily'), ('weekly','Weekly'), ('monthly','Monthly'),
+                              ('quarterly','Quarterly'), ('half_yearly','Half-Yearly'),
+                              ('yearly','Yearly'), ('custom','Custom range')] %}
+            <option value="{{ g }}" {{ 'selected' if grain == g }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label">From / anchor date</label>
+        <input type="date" class="form-control form-control-sm" name="start" value="{{ period_start }}">
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label">To (custom only)</label>
+        <input type="date" class="form-control form-control-sm" name="end" value="{{ period_end }}">
+      </div>
+      <div class="col-6 col-md-3">
+        <button class="btn btn-primary btn-sm w-100" type="submit">Analyse</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="stat-card tone-income">
+    <div class="stat-label">Revenue — {{ comparison.label }}</div>
+    <div class="stat-value">{{ comparison.current.total_income|rs }}</div>
+    <div class="stat-sub">vs {{ comparison.prev_label }}: {{ comparison.previous.total_income|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-expense">
+    <div class="stat-label">Expenses — {{ comparison.label }}</div>
+    <div class="stat-value">{{ comparison.current.total_expenses|rs }}</div>
+    <div class="stat-sub">vs {{ comparison.prev_label }}: {{ comparison.previous.total_expenses|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card {{ 'tone-income' if comparison.current.is_profit else 'tone-expense' }}">
+    <div class="stat-label">Net Result</div>
+    <div class="stat-value">{{ (comparison.current.net_profit if comparison.current.is_profit else -comparison.current.net_loss)|rs }}</div>
+    <div class="stat-sub">{{ 'Profit' if comparison.current.is_profit else 'Loss' }} for the period</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-cash">
+    <div class="stat-label">Cash &amp; Bank</div><div class="stat-value">{{ comparison.current.cash_balance|rs }}</div>
+    <div class="stat-sub">Receivables {{ comparison.current.receivable|rs }}</div></div></div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header"><h3>Income vs Expenses</h3></div>
+      <div class="card-body"><div class="chart-box"><canvas id="chartTrend"></canvas></div></div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header"><h3>Current vs Previous</h3></div>
+      <div class="card-body"><div class="chart-box"><canvas id="chartCompare"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h3>Comparison — {{ comparison.label }} vs {{ comparison.prev_label }}</h3>
+    <span class="spacer"></span>
+    {% if not comparison.previous_has_data %}
+      <span class="badge-soft badge-neutral">No comparison data available</span>
+    {% endif %}
+  </div>
+  <div class="table-wrap">
+    <table class="table table-stack align-middle">
+      <thead><tr><th>Metric</th><th class="text-end">{{ comparison.label }}</th>
+        <th class="text-end">{{ comparison.prev_label }}</th>
+        <th class="text-end">Change</th><th class="text-end">Growth</th></tr></thead>
+      <tbody>
+        {% for m in comparison.metrics %}
+          <tr>
+            <td data-label="Metric">{{ m.title }}</td>
+            <td class="num" data-label="Current">{{ m.current|rs }}</td>
+            <td class="num" data-label="Previous">
+              {% if m.has_previous %}{{ m.previous|rs }}{% else %}<span class="hint">No data</span>{% endif %}</td>
+            <td class="num {{ 'amount-pos' if m.change > 0 else ('amount-neg' if m.change < 0 else '') }}"
+                data-label="Change">{{ m.change|rs }}</td>
+            <td class="num" data-label="Growth">
+              {% if m.growth is none %}<span class="hint">n/a</span>
+              {% else %}{{ m.growth|num }}%{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Annual summary — {{ annual.label }}</h3>
+    <span class="spacer"></span>
+    <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='pdf', report_name='annual_analysis') }}">PDF</a>
+  </div>
+  <div class="table-wrap">
+    <table class="table table-sm">
+      <thead><tr><th>Metric</th><th class="text-end">Current year</th>
+        <th class="text-end">Previous year</th><th class="text-end">Growth</th></tr></thead>
+      <tbody>
+        {% for key, label in [('total_income','Total Revenue'), ('total_expenses','Total Expenses'),
+                              ('gross_profit','Gross Profit'), ('net_profit','Net Profit'),
+                              ('total_assets','Total Assets'), ('total_liabilities','Total Liabilities'),
+                              ('owner_capital',"Owner's Equity"), ('cash_balance','Cash & Bank'),
+                              ('receivable','Accounts Receivable'), ('payable','Accounts Payable')] %}
+          {% set g = {'total_income': annual.revenue_growth, 'net_profit': annual.profit_growth,
+                      'total_expenses': annual.expense_growth}.get(key) %}
+          <tr>
+            <td>{{ label }}</td>
+            <td class="num">{{ annual.current[key]|rs }}</td>
+            <td class="num">{% if annual.previous_has_data %}{{ annual.previous[key]|rs }}
+              {% else %}<span class="hint">No data</span>{% endif %}</td>
+            <td class="num">{% if g is not none and annual.previous_has_data %}{{ g|num }}%
+              {% else %}<span class="hint">n/a</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if not annual.previous_has_data %}
+    <div class="card-body">
+      <div class="alert alert-info mb-0">No comparison data available for the previous year
+        ({{ annual.prev_label }}). Growth percentages will appear once prior-year records exist.</div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+const C = {{ chart|tojson }};
+
+new Chart(document.getElementById("chartTrend"), {
+  type: "line",
+  data: {
+    labels: C.labels,
+    datasets: [
+      { label: "Income", data: C.income, borderColor: "#2457D6", backgroundColor: "rgba(36,87,214,.10)",
+        fill: true, tension: .35, pointRadius: 2.5 },
+      { label: "Expenses", data: C.expenses, borderColor: "#F0A03C", backgroundColor: "rgba(240,160,60,.10)",
+        fill: true, tension: .35, pointRadius: 2.5 },
+      { label: "Profit", data: C.profit, borderColor: "#12805C", borderDash: [4, 3], tension: .3, pointRadius: 2 }
+    ]
+  },
+  options: { responsive: true, interaction: { mode: "index", intersect: false },
+    plugins: { legend: { position: "bottom" }, tooltip: AP.tooltip },
+    scales: { x: AP.axis, y: AP.yAxis } }
+});
+
+new Chart(document.getElementById("chartCompare"), {
+  type: "bar",
+  data: {
+    labels: ["Income", "Expenses"],
+    datasets: [
+      { label: C.cur_label, data: [C.cur_income, C.cur_expenses], backgroundColor: "#2457D6", borderRadius: 6 },
+      { label: C.prev_label, data: [C.prev_income, C.prev_expenses], backgroundColor: "#B9C6E4", borderRadius: 6 }
+    ]
+  },
+  options: { responsive: true, plugins: { legend: { position: "bottom" }, tooltip: AP.tooltip },
+    scales: { x: AP.axis, y: AP.yAxis } }
+});
+</script>
+{% endblock %}

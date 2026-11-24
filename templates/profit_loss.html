@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/macros.html' import two_side, empty_state %}
+{% block title %}Profit &amp; Loss{% endblock %}
+{% block page_title %}Profit &amp; Loss Account{% endblock %}
+{% block crumb %}Financial statements · Net result for the period{% endblock %}
+
+{% block content %}
+<div class="card mb-3 no-print">
+  <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-6 col-md-4"><label class="form-label">From</label>
+        <input type="date" class="form-control form-control-sm" name="start" value="{{ period_start }}"></div>
+      <div class="col-6 col-md-4"><label class="form-label">To</label>
+        <input type="date" class="form-control form-control-sm" name="end" value="{{ period_end }}"></div>
+      <div class="col-12 col-md-4"><button class="btn btn-primary btn-sm w-100">Apply</button></div>
+    </form>
+    <div class="ms-auto d-flex flex-wrap gap-2">
+      <button class="btn btn-sm btn-ghost" type="button" data-print>{{ icon('printer') }} Print</button>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='pdf', report_name='profit_loss') }}">PDF</a>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='word', report_name='profit_loss') }}">Word</a>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('export_report', fmt='excel', report_name='profit_loss') }}">Excel</a>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="stat-card tone-income">
+    <div class="stat-label">Gross Profit</div><div class="stat-value">{{ t.gross_profit|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-income">
+    <div class="stat-label">Other Income</div><div class="stat-value">{{ pl.other_income|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-expense">
+    <div class="stat-label">Indirect Expenses</div><div class="stat-value">{{ pl.expense_total|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card {{ 'tone-income' if pl.is_profit else 'tone-expense' }}">
+    <div class="stat-label">{{ 'Net Profit' if pl.is_profit else 'Net Loss' }}</div>
+    <div class="stat-value {{ 'neg' if not pl.is_profit }}">
+      {{ (pl.net_profit if pl.is_profit else pl.net_loss)|rs }}</div></div></div>
+</div>
+
+{% if pl.has_activity %}
+  {{ two_side('Profit & Loss Account for ' ~ period_label, pl.debit_items, pl.credit_items,
+              pl.total_debit, pl.total_credit,
+              {'label': 'Net Profit' if pl.is_profit else 'Net Loss',
+               'amount': (pl.net_profit if pl.is_profit else pl.net_loss)}) }}
+{% else %}
+  <div class="card"><div class="card-body">
+    {{ empty_state('No income or expenses',
+       'Nothing has been posted for ' ~ period_label ~ ', so the Profit & Loss Account is empty.', 'trending') }}
+  </div></div>
+{% endif %}
+
+<div class="card mt-3">
+  <div class="card-body d-flex flex-wrap gap-2">
+    <a class="btn btn-sm btn-ghost" href="{{ url_for('trading_account_page') }}">Trading Account</a>
+    <a class="btn btn-sm btn-primary" href="{{ url_for('balance_sheet_page') }}">Balance Sheet</a>
+    <a class="btn btn-sm btn-ghost" href="{{ url_for('closing_entries_page') }}">Closing entries</a>
+  </div>
+</div>
+{% endblock %}

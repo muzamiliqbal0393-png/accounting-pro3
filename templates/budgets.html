@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/macros.html' import empty_state %}
+{% block title %}Budgets{% endblock %}
+{% block page_title %}Budget Management{% endblock %}
+{% block crumb %}Planning · Planned vs actual performance{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-xl-4">
+    <div class="card mb-3">
+      <div class="card-header"><h3>Create a budget</h3></div>
+      <div class="card-body">
+        <form method="post">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <div class="row g-3">
+            <div class="col-12"><label class="form-label required">Budget name</label>
+              <input class="form-control" name="name" required placeholder="e.g. Q1 2026 Budget"></div>
+            <div class="col-12"><label class="form-label">Type</label>
+              <select class="form-select" name="kind">
+                <option>Monthly</option><option>Quarterly</option><option>Annual</option>
+              </select></div>
+            <div class="col-6"><label class="form-label required">From</label>
+              <input type="date" class="form-control" name="start_date" required value="{{ period_start }}"></div>
+            <div class="col-6"><label class="form-label required">To</label>
+              <input type="date" class="form-control" name="end_date" required value="{{ period_end }}"></div>
+            <div class="col-6"><label class="form-label">Planned income</label>
+              <input class="form-control" name="planned_income" inputmode="decimal" placeholder="0.00"></div>
+            <div class="col-6"><label class="form-label">Planned expenses</label>
+              <input class="form-control" name="planned_expenses" inputmode="decimal" placeholder="0.00"></div>
+            <div class="col-12"><label class="form-label">Notes</label>
+              <textarea class="form-control" name="notes" rows="2"></textarea></div>
+            <div class="col-12"><button class="btn btn-primary w-100" type="submit">Create budget</button></div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-8">
+    <div class="card mb-3">
+      <div class="card-header"><h3>Planned vs actual</h3></div>
+      <div class="card-body">
+        {% if analyses %}
+          <div class="chart-box"><canvas id="chartBudget"></canvas></div>
+        {% else %}
+          {{ empty_state('No budgets yet', 'Create a monthly, quarterly or annual budget to compare
+             planned figures against actual performance.', 'target') }}
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>Budget performance</h3></div>
+      <div class="table-wrap">
+        <table class="table table-stack align-middle">
+          <thead><tr><th>Budget</th><th>Period</th>
+            <th class="text-end">Planned income</th><th class="text-end">Actual income</th>
+            <th class="text-end">Utilisation</th><th class="text-end">Planned expenses</th>
+            <th class="text-end">Actual expenses</th><th></th></tr></thead>
+          <tbody>
+            {% for a in analyses %}
+              <tr>
+                <td data-label="Budget"><strong>{{ a.budget.name }}</strong>
+                  <div class="hint">{{ a.budget.kind }}</div></td>
+                <td class="hint" data-label="Period">{{ a.budget.start_date|dt }} – {{ a.budget.end_date|dt }}</td>
+                <td class="num" data-label="Planned income">{{ a.planned_income|rs }}</td>
+                <td class="num" data-label="Actual income">{{ a.actual_income|rs }}
+                  <div class="hint {{ 'amount-pos' if a.income_variance >= 0 else 'amount-neg' }}">
+                    {{ a.income_variance|rs }}</div></td>
+                <td class="num" data-label="Utilisation">
+                  {% if a.income_utilization is not none %}{{ a.income_utilization|num }}%{% else %}—{% endif %}</td>
+                <td class="num" data-label="Planned expenses">{{ a.planned_expenses|rs }}</td>
+                <td class="num" data-label="Actual expenses">{{ a.actual_expenses|rs }}
+                  <div class="hint {{ 'amount-neg' if a.expense_variance > 0 else 'amount-pos' }}">
+                    {{ a.expense_variance|rs }}</div></td>
+                <td class="text-end">
+                  <form method="post" action="{{ url_for('budget_delete', budget_id=a.budget.id) }}"
+                        data-confirm="Delete budget {{ a.budget.name }}?">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-ghost text-danger" type="submit">{{ icon('trash') }}</button>
+                  </form>
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="8" class="text-center text-muted py-4">No budgets created yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if analyses %}
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+const B = {{ chart|tojson }};
+new Chart(document.getElementById("chartBudget"), {
+  type: "bar",
+  data: {
+    labels: B.labels,
+    datasets: [
+      { label: "Planned income", data: B.planned_income, backgroundColor: "#B9C6E4", borderRadius: 6 },
+      { label: "Actual income", data: B.actual_income, backgroundColor: "#2457D6", borderRadius: 6 },
+      { label: "Planned expenses", data: B.planned_expenses, backgroundColor: "#F6D9A8", borderRadius: 6 },
+      { label: "Actual expenses", data: B.actual_expenses, backgroundColor: "#F0A03C", borderRadius: 6 }
+    ]
+  },
+  options: { responsive: true, plugins: { legend: { position: "bottom" }, tooltip: AP.tooltip },
+    scales: { x: AP.axis, y: AP.yAxis } }
+});
+</script>
+{% endif %}
+{% endblock %}

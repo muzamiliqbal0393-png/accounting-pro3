@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/macros.html' import status_badge, empty_state %}
+{% block title %}Adjusting Entries{% endblock %}
+{% block page_title %}Adjusting Entries{% endblock %}
+{% block crumb %}Transactions · Period-end adjustments{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+    <span class="hint">Adjustments are posted separately from vouchers and are only applied in the
+      Adjusted Trial Balance and the financial statements.</span>
+    <a class="btn btn-primary btn-sm ms-auto" href="{{ url_for('adjustment_new') }}">
+      {{ icon('plus') }} New Adjustment</a>
+    <a class="btn btn-sm btn-ghost" href="{{ url_for('import_center') }}">Import adjustments</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>{{ items|length }} adjustment{{ '' if items|length == 1 else 's' }}</h3>
+    <span class="spacer"></span>
+    <span class="hint">Total adjustments: {{ total|rs }}</span>
+  </div>
+  <div class="table-wrap">
+    <table class="table table-stack align-middle">
+      <thead>
+        <tr><th>No.</th><th>Date</th><th>Type</th><th>Description</th>
+          <th class="text-end">Debit</th><th class="text-end">Credit</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for a in items %}
+          <tr>
+            <td data-label="No."><strong>{{ a.adj_no }}</strong></td>
+            <td class="nowrap" data-label="Date">{{ a.adj_date|dt }}</td>
+            <td data-label="Type"><span class="badge-soft badge-info">{{ a.kind }}</span></td>
+            <td data-label="Description">{{ a.description or '—' }}
+              <div class="hint">
+                {% for line in a.lines %}
+                  {% set acc = accounts.get(line.account_id) %}
+                  {{ 'Dr' if line.debit else 'Cr' }} {{ acc.name if acc else '?' }}
+                  {{ (line.debit or line.credit)|rs }}{{ '; ' if not loop.last }}
+                {% endfor %}
+              </div>
+            </td>
+            <td class="num" data-label="Debit">{{ a.total_debit|rs }}</td>
+            <td class="num" data-label="Credit">{{ a.total_credit|rs }}</td>
+            <td data-label="Status">{{ status_badge(a.status) }}</td>
+            <td class="text-end nowrap">
+              {% if a.status != 'posted' %}
+                <form method="post" action="{{ url_for('adjustment_post', adjustment_id=a.id) }}" class="d-inline">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-ghost" type="submit">{{ icon('check') }}</button>
+                </form>
+                <form method="post" action="{{ url_for('adjustment_delete', adjustment_id=a.id) }}" class="d-inline"
+                      data-confirm="Delete adjustment {{ a.adj_no }}?">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-ghost text-danger" type="submit">{{ icon('trash') }}</button>
+                </form>
+              {% else %}
+                <span class="hint">locked</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="8">
+            {{ empty_state('No adjusting entries',
+               'Create closing stock, depreciation, outstanding expense or prepaid adjustments for ' ~ period_label ~ '.',
+               'sliders', url_for('adjustment_new'), 'New Adjustment') }}
+          </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('adjusted_trial_balance_page') }}">
+      {{ icon('scale') }} View Adjusted Trial Balance</a>
+  </div>
+</div>
+{% endblock %}

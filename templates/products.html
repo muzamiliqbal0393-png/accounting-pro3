@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/macros.html' import empty_state %}
+{% block title %}Products{% endblock %}
+{% block page_title %}Products &amp; Sales{% endblock %}
+{% block crumb %}Inventory · Product master and performance{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="stat-card tone-asset">
+    <div class="stat-label">Products</div><div class="stat-value">{{ summary.count }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-cash">
+    <div class="stat-label">Stock Value</div><div class="stat-value">{{ summary.total_value|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card tone-income">
+    <div class="stat-label">Product Revenue</div><div class="stat-value">{{ summary.total_revenue|rs }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card {{ 'tone-income' if summary.gross_profit >= 0 else 'tone-expense' }}">
+    <div class="stat-label">Gross Profit</div><div class="stat-value">{{ summary.gross_profit|rs }}</div>
+    <div class="stat-sub">Margin {{ summary.margin|num }}%</div></div></div>
+</div>
+
+{% if summary.low_stock %}
+<div class="alert alert-warning d-flex flex-wrap gap-2 align-items-center">
+  {{ icon('alert') }}
+  <span><strong>Low stock:</strong>
+    {% for p in summary.low_stock %}{{ p.name }} ({{ p.available_stock }} left){{ ', ' if not loop.last }}{% endfor %}
+  </span>
+  <a class="btn btn-sm btn-ghost ms-auto" href="{{ url_for('inventory') }}">Record purchase</a>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-xl-8">
+    <div class="card">
+      <div class="card-header"><h3>Product list</h3>
+        <span class="spacer"></span>
+        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addProduct">
+          {{ icon('plus') }} Add product</button></div>
+      <div class="table-wrap">
+        <table class="table table-stack align-middle">
+          <thead><tr><th>Code</th><th>Product</th><th class="text-end">Cost</th><th class="text-end">Price</th>
+            <th class="text-end">Stock</th><th class="text-end">Sold</th><th class="text-end">Revenue</th>
+            <th class="text-end">Gross Profit</th><th></th></tr></thead>
+          <tbody>
+            {% for p in summary.products %}
+              <tr>
+                <td class="code" data-label="Code">{{ p.code }}</td>
+                <td data-label="Product"><strong>{{ p.name }}</strong>
+                  {% if p.category %}<div class="hint">{{ p.category }}</div>{% endif %}</td>
+                <td class="num" data-label="Cost">{{ p.purchase_cost|rs }}</td>
+                <td class="num" data-label="Price">{{ p.selling_price|rs }}</td>
+                <td class="num" data-label="Stock">
+                  {{ p.available_stock }}
+                  {% if p.is_low_stock %}<span class="badge-soft badge-draft">low</span>{% endif %}</td>
+                <td class="num" data-label="Sold">{{ p.net_sold }}</td>
+                <td class="num" data-label="Revenue">{{ p.revenue|rs }}</td>
+                <td class="num" data-label="Gross Profit">{{ p.gross_profit|rs }}
+                  <div class="hint">{{ p.margin|num }}%</div></td>
+                <td class="text-end nowrap">
+                  <button class="btn btn-sm btn-ghost" data-bs-toggle="modal"
+                          data-bs-target="#editProduct{{ p.id }}">{{ icon('edit') }}</button>
+                  <form method="post" action="{{ url_for('product_delete', product_id=p.id) }}" class="d-inline"
+                        data-confirm="Delete product {{ p.name }}?">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-ghost text-danger" type="submit">{{ icon('trash') }}</button>
+                  </form>
+                </td>
+              </tr>
+              <div class="modal fade" id="editProduct{{ p.id }}" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                  <form class="modal-content" method="post" action="{{ url_for('product_edit', product_id=p.id) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <div class="modal-header"><h5 class="modal-title">Edit {{ p.name }}</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body row g-3">
+                      <div class="col-12"><label class="form-label">Name</label>
+                        <input class="form-control" name="name" value="{{ p.name }}"></div>
+                      <div class="col-12"><label class="form-label">Category</label>
+                        <input class="form-control" name="category" value="{{ p.category or '' }}"></div>
+                      <div class="col-6"><label class="form-label">Purchase cost</label>
+                        <input class="form-control" name="purchase_cost" value="{{ p.purchase_cost }}"></div>
+                      <div class="col-6"><label class="form-label">Selling price</label>
+                        <input class="form-control" name="selling_price" value="{{ p.selling_price }}"></div>
+                      <div class="col-6"><label class="form-label">Opening qty</label>
+                        <input class="form-control" name="opening_qty" value="{{ p.opening_qty }}"></div>
+                      <div class="col-6"><label class="form-label">Reorder level</label>
+                        <input class="form-control" name="reorder_level" value="{{ p.reorder_level }}"></div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                      <button class="btn btn-primary" type="submit">Save</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            {% else %}
+              <tr><td colspan="9">
+                {{ empty_state('No products yet',
+                   'Add your products to track stock, sales, cost of goods sold and profit per product.',
+                   'box') }}
+              </td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4">
+    <div class="card">
+      <div class="card-header"><h3>How inventory links to accounting</h3></div>
+      <div class="card-body">
+        <p class="hint mb-2">Recording a sale or purchase in the Inventory module can post a matching
+          journal draft:</p>
+        <ul class="hint ps-3 mb-2" style="line-height:1.9">
+          <li><strong>Sale:</strong> Dr Cash / Receivable, Cr Sales</li>
+          <li><strong>Purchase:</strong> Dr Purchases, Cr Cash / Payable</li>
+        </ul>
+        <p class="hint mb-0">Inventory quantities are only treated as accounting facts when supported by
+          posted vouchers or your confirmed opening stock.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="addProduct" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <form class="modal-content" method="post">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header"><h5 class="modal-title">Add product</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body row g-3">
+        <div class="col-6"><label class="form-label required">Product code</label>
+          <input class="form-control" name="code" required placeholder="e.g. SKU-001"></div>
+        <div class="col-6"><label class="form-label required">Product name</label>
+          <input class="form-control" name="name" required></div>
+        <div class="col-6"><label class="form-label">Category</label>
+          <input class="form-control" name="category"></div>
+        <div class="col-3"><label class="form-label">Purchase cost</label>
+          <input class="form-control" name="purchase_cost" inputmode="decimal" placeholder="0.00"></div>
+        <div class="col-3"><label class="form-label">Selling price</label>
+          <input class="form-control" name="selling_price" inputmode="decimal" placeholder="0.00"></div>
+        <div class="col-3"><label class="form-label">Opening quantity</label>
+          <input class="form-control" name="opening_qty" inputmode="numeric" value="0"></div>
+        <div class="col-3"><label class="form-label">Reorder level</label>
+          <input class="form-control" name="reorder_level" inputmode="numeric" value="0"></div>
+        <div class="col-3"><label class="form-label">Discount %</label>
+          <input class="form-control" name="discount_percent" inputmode="decimal" value="0"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" type="submit">Add product</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

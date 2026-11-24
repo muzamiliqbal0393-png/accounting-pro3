@@ -1,0 +1,22 @@
+# One-click blueprint for Render (persistent disk -> a real, working SQLite app).
+# Dashboard: New + > Blueprint > pick the repo that contains this file.
+services:
+  - type: web
+    name: accounting-pro
+    runtime: python
+    plan: starter            # disks require a paid instance type
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 120
+    healthCheckPath: /login
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.6
+      - key: SECRET_KEY
+        generateValue: true
+      # everything writable lives on the mounted disk (database + uploads)
+      - key: ACCOUNTING_PRO_DATA_DIR
+        value: /var/data
+    disk:
+      name: accounting-data
+      mountPath: /var/data
+      sizeGB: 1
