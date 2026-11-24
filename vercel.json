@@ -5,18 +5,7 @@
     "api/index.py": {
       "memory": 1024,
       "maxDuration": 30,
-      "includeFiles": [
-        "app.py",
-        "config.py",
-        "models.py",
-        "extensions.py",
-        "accounting/**",
-        "imports/**",
-        "exports/**",
-        "templates/**",
-        "static/**",
-        "accounting_pro.db"
-      ]
+      "includeFiles": "**"
     }
   },
   "rewrites": [
