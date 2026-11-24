@@ -2159,10 +2159,12 @@ DEFAULT_CHART = [
     ("1070", "Machinery", "Assets", "fixed_asset"),
     ("1080", "Building", "Assets", "fixed_asset"),
     ("1090", "Prepaid Expenses", "Assets", "other_asset"),
+    ("1100", "Outstanding Income (Accrued)", "Assets", "other_asset"),
     ("2000", "Accounts Payable", "Liabilities", "accounts_payable"),
     ("2010", "Outstanding Expenses", "Liabilities", "outstanding_expenses"),
     ("2020", "Bank Loan", "Liabilities", "loan"),
     ("2030", "Other Liabilities", "Liabilities", "other_liability"),
+    ("2040", "Income Received in Advance", "Liabilities", "other_liability"),
     ("3000", "Owner's Capital", "Equity", "capital"),
     ("3010", "Drawings", "Equity", "drawings"),
     ("3020", "Retained Earnings", "Equity", "retained_earnings"),
@@ -2170,6 +2172,7 @@ DEFAULT_CHART = [
     ("4010", "Sales Returns", "Revenue", "sales_returns"),
     ("4020", "Other Income", "Revenue", "other_income"),
     ("4030", "Trading A/c (Closing Stock Contra)", "Revenue", "trading_contra"),
+    ("4040", "Interest on Drawings", "Revenue", "other_income"),
     ("5000", "Purchases", "Expenses", "purchases"),
     ("5010", "Purchase Returns", "Expenses", "purchase_returns"),
     ("5020", "Carriage Inward", "Expenses", "direct_expenses"),
@@ -2181,6 +2184,7 @@ DEFAULT_CHART = [
     ("5080", "Depreciation", "Expenses", "depreciation"),
     ("5090", "Bad Debts", "Expenses", "bad_debts"),
     ("5100", "Provision for Doubtful Debts", "Expenses", "indirect_expenses"),
+    ("5110", "Interest on Capital", "Expenses", "indirect_expenses"),
 ]
 
 

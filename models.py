@@ -100,10 +100,15 @@ ENTRY_TYPES = ["Cash Receipt", "Cash Payment", "Bank Receipt", "Bank Payment",
                "Credit Sale", "Credit Purchase", "Cash Sale", "Cash Purchase",
                "Expense", "Capital", "Drawings", "General Journal", "Reversal",
                "Opening Balance", "Other"]
-ADJUSTMENT_KINDS = ["Closing Stock", "Outstanding Expenses", "Prepaid Expenses",
-                    "Accrued Income", "Income Received in Advance", "Depreciation",
+#: Every adjustment type required by the project brief (p.96 of the project
+#: handout) is listed here.
+ADJUSTMENT_KINDS = ["Closing Stock", "Outstanding Expenses", "Outstanding Income",
+                    "Prepaid Expenses", "Income Received in Advance", "Depreciation",
                     "Bad Debts", "Provision for Doubtful Debts", "Interest on Capital",
                     "Interest on Drawings", "Other"]
+
+#: Older databases may hold the previous wording; map it so nothing breaks.
+ADJUSTMENT_KIND_ALIASES = {"Accrued Income": "Outstanding Income"}
 
 
 # ---------------------------------------------------------------------------
