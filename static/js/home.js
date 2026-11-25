@@ -17,7 +17,7 @@
 
     var index = 0;
     var timer = null;
-    var DWELL = 1500; // each background stays ~1.5 seconds
+    var DWELL = 2500; // each background stays ~2.5 seconds (slower, easier to read)
 
     function show(next, restart) {
       index = (next + slides.length) % slides.length;
