@@ -1,0 +1,45 @@
+{% extends 'admin/base.html' %}
+{% block title %}Books check{% endblock %}
+{% block content %}
+
+<div class="adm-hero">
+  <div><h1>Books check</h1>
+    <p>Trial balance and profit position of every business, recomputed by the
+       accounting engine — read only, nothing is changed.</p></div>
+</div>
+
+<section class="adm-card">
+  <header><h3>All books</h3></header>
+  <div class="body flush">
+    <div class="table-wrap">
+      <table class="table align-middle mb-0">
+        <thead><tr><th>Business</th><th class="text-end">Total Debit</th>
+          <th class="text-end">Total Credit</th><th class="text-end">Difference</th>
+          <th>Trial balance</th><th class="text-end">Gross Profit</th>
+          <th class="text-end">Net Profit</th><th class="text-end">Net Loss</th>
+          <th class="text-end">Closing Entries</th><th></th></tr></thead>
+        <tbody>
+        {% for r in rows %}
+          <tr>
+            <td><strong>{{ r.business.name }}</strong></td>
+            <td class="num">{{ r.books.debit|rs if r.books else '—' }}</td>
+            <td class="num">{{ r.books.credit|rs if r.books else '—' }}</td>
+            <td class="num">{{ r.books.difference|rs if r.books else '—' }}</td>
+            <td>{% if r.books and r.books.balanced %}<span class="adm-tag ok">Balanced</span>
+                {% else %}<span class="adm-tag bad">Check</span>{% endif %}</td>
+            <td class="num">{{ r.gross_profit|rs }}</td>
+            <td class="num">{{ r.net_profit|rs }}</td>
+            <td class="num">{{ r.net_loss|rs }}</td>
+            <td class="num">{{ r.business.closing_entries|length }}</td>
+            <td class="text-end"><a class="btn btn-sm btn-ghost"
+              href="{{ url_for('admin_business_detail', business_id=r.business.id) }}">Detail</a></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="10" class="hint">No businesses yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

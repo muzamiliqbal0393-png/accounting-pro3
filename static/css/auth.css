@@ -360,3 +360,19 @@
   .ac-field .form-control, .ac-btn-primary { height: 47px; }
   .ac-row { flex-wrap: wrap; }
 }
+
+/* Administrator sign-in link (subtle, below the register button) */
+.ac-admin-link {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 12.5px;
+}
+.ac-admin-link .ac-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #6b7a99;
+  text-decoration: none;
+}
+.ac-admin-link .ac-link:hover { color: #1d4ed8; text-decoration: underline; }
+.ac-admin-link svg { width: 14px; height: 14px; }

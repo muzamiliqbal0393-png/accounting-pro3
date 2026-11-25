@@ -55,6 +55,7 @@ from exports.excel_export import (render_excel, render_full_workbook, to_bytes,
 
 from imports.processor import (IMPORT_KINDS, auto_map, parse_upload, validate_rows,
                                apply_import)
+from admin_panel import register_admin
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -72,6 +73,7 @@ def create_app(config_object=Config):
     ensure_dirs()
     register_jinja(app)
     register_routes(app)
+    register_admin(app)
     with app.app_context():
         db.create_all()
     return app

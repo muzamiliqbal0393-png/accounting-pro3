@@ -1,0 +1,59 @@
+{% extends 'admin/base.html' %}
+{% block title %}Activity log{% endblock %}
+{% block content %}
+
+<div class="adm-hero">
+  <div><h1>Activity log</h1>
+    <p>Every recorded action from the whole system — user logins, vouchers, adjustments,
+       closings and admin sign-ins.</p></div>
+  <span class="pill">{{ total }} events</span>
+</div>
+
+<section class="adm-card">
+  <header>
+    <h3>Events</h3><span class="spacer"></span>
+    <form method="get" class="d-flex gap-2">
+      <input class="form-control form-control-sm" name="action" value="{{ action }}"
+             placeholder="Filter by action (e.g. Posted, Admin)">
+      <button class="btn btn-sm btn-primary">Filter</button>
+      {% if action %}<a class="btn btn-sm btn-ghost" href="{{ url_for('admin_activity') }}">Clear</a>{% endif %}
+    </form>
+  </header>
+  <div class="body flush">
+    <div class="table-wrap">
+      <table class="table align-middle mb-0">
+        <thead><tr><th>When</th><th>Action</th><th>Record</th><th>User</th>
+          <th>Business</th><th>IP</th></tr></thead>
+        <tbody>
+        {% for e in events %}
+          {% set u = users.get(e.user_id) %}{% set b = businesses.get(e.business_id) %}
+          <tr>
+            <td class="hint" style="font-size:12px;white-space:nowrap">
+              {{ e.created_at.strftime('%d %b %Y %H:%M:%S') if e.created_at else '—' }}</td>
+            <td><span class="adm-tag {{ 'info' if e.action.startswith('Admin') else 'muted' }}">{{ e.action }}</span></td>
+            <td class="hint" style="font-size:12px">
+              {{ e.record_type or '—' }}{% if e.record_id %} #{{ e.record_id }}{% endif %}</td>
+            <td class="hint" style="font-size:12px">{{ u.name if u else (e.new_values if e.action.startswith('Admin') else '—') }}</td>
+            <td class="hint" style="font-size:12px">{{ b.name if b else '—' }}</td>
+            <td class="hint" style="font-size:12px">{{ e.ip_address or '—' }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" class="hint">No events match.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% if pages > 1 %}
+  <div class="body d-flex align-items-center gap-2">
+    {% if page > 1 %}
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('admin_activity', page=page-1, action=action) }}">← Previous</a>
+    {% endif %}
+    <span class="hint">Page {{ page }} of {{ pages }}</span>
+    {% if page < pages %}
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('admin_activity', page=page+1, action=action) }}">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -97,6 +97,13 @@ ENGINE_OPTIONS = ({"connect_args": {"auth_token": TURSO_AUTH_TOKEN}}
 class Config:
     """Base configuration shared by every environment."""
 
+    # --- Administrator panel -------------------------------------------
+    # Separate sign-in for /admin. Change these (or set the environment
+    # variables) before putting the system in front of real users.
+    ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@accountingpro.local")
+    ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Admin@12345")
+    ADMIN_NAME = os.environ.get("ADMIN_NAME", "System Administrator")
+
     # --- Security -------------------------------------------------------
     SECRET_KEY = os.environ.get("SECRET_KEY", "accounting-pro-dev-secret-change-me")
     SESSION_COOKIE_HTTPONLY = True

@@ -43,6 +43,8 @@ Environment variables to set in Vercel (Production **and** Preview):
 | `TURSO_AUTH_TOKEN` | the Turso database token |
 | `SECRET_KEY` | any long random string |
 | `ACCOUNTING_PRO_SEED_FROM_BUNDLE` | `0` (data lives in Turso, no need to ship the demo db) |
+| `ADMIN_EMAIL` | your administrator email for `/admin` (e.g. `admin@yourdomain.com`) |
+| `ADMIN_PASSWORD` | a strong password for the administrator panel — **change the default** |
 
 Steps:
 
@@ -167,6 +169,9 @@ and keep the project in `/home/<user>/accounting_pro`.
 | `ACCOUNTING_PRO_UPLOAD_DIR` | `<data dir>/uploads` | Logo, attachment, import and backup files. |
 | `ACCOUNTING_PRO_SEED_FROM_BUNDLE` | `1` | Copy the bundled demo database on first boot. `0` = start empty. |
 | `DATABASE_URL` | `sqlite:///<data dir>/accounting_pro.db` | Full SQLAlchemy URL; set it if you ever move to another database. |
+| `ADMIN_EMAIL` | `admin@accountingpro.local` | Sign-in email for the separate administrator panel at `/admin`. |
+| `ADMIN_PASSWORD` | `Admin@12345` | Password for `/admin`. **Change this before real users get the link.** |
+| `ADMIN_NAME` | `System Administrator` | Label shown in the admin panel. |
 
 ## Pre-flight checks before you push
 

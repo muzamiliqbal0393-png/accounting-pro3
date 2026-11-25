@@ -1,0 +1,144 @@
+{% extends 'admin/base.html' %}
+{% block title %}{{ business.name }}{% endblock %}
+{% block content %}
+
+<div class="adm-hero">
+  <div>
+    <h1>{{ business.name }}</h1>
+    <p>{{ business.business_type or 'Business' }} · {{ business.currency }} ·
+       {{ business.address or 'no address' }} · owner {{ owner.email if owner else '—' }}</p>
+  </div>
+  <div class="ms-auto d-flex gap-2 flex-wrap">
+    <span class="pill">{{ periods|length }} period{{ '' if periods|length == 1 else 's' }}</span>
+    <span class="pill">{{ vouchers|length }}+ vouchers shown</span>
+    <a class="btn btn-sm" style="background:#fff;color:#101D3A;font-weight:600"
+       href="{{ url_for('admin_businesses') }}">Back</a>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi"><span>Trial balance</span>
+    <strong>{{ books.debit|rs if books else '—' }}</strong>
+    <small>{% if books and books.balanced %}Debit = Credit · balanced
+           {% elif books %}Difference {{ books.difference|rs }}{% else %}no data{% endif %}</small></div>
+  <div class="kpi"><span>Adjusted TB</span>
+    <strong>{{ adjusted.totals.adjusted_debit|rs }}</strong>
+    <small>{{ 'balanced' if adjusted.totals.is_balanced else 'difference ' ~ adjusted.totals.difference|rs }}</small></div>
+  <div class="kpi"><span>Post-closing TB</span>
+    <strong>{{ post_closing.total_debit|rs }}</strong>
+    <small>{% if not closings %}period not closed yet — {{ post_closing.unclosed_temporary|length }}
+           temporary account(s) open{% elif post_closing.is_balanced %}balanced · temp open
+           {{ post_closing.unclosed_temporary|length }}{% else %}difference
+           {{ post_closing.difference|rs }}{% endif %}</small></div>
+  <div class="kpi"><span>Net Profit</span>
+    <strong>{{ pl.net_profit|rs }}</strong><small>{% if pl.has_activity %}from the books{% else %}no activity{% endif %}</small></div>
+  <div class="kpi"><span>Adjustments</span><strong>{{ adjustments|length }}</strong><small>latest shown below</small></div>
+  <div class="kpi"><span>Closing entries</span><strong>{{ closings|length }}</strong>
+    <small>{% for c in closings[:1] %}{{ c.entry_no }} · {{ c.status }}{% else %}none yet{% endfor %}</small></div>
+</div>
+
+<div class="adm-grid">
+  <div>
+    <section class="adm-card">
+      <header><h3>Latest vouchers</h3></header>
+      <div class="body flush">
+        <div class="table-wrap">
+          <table class="table align-middle mb-0">
+            <thead><tr><th>Voucher</th><th>Date</th><th>Description</th>
+              <th class="text-end">Debit</th><th>Status</th></tr></thead>
+            <tbody>
+            {% for v in vouchers %}
+              <tr>
+                <td class="code">{{ v.voucher_no }}</td>
+                <td>{{ v.entry_date }}</td>
+                <td class="hint" style="font-size:12px">{{ (v.description or v.entry_type)|truncate(50) }}</td>
+                <td class="num">{{ v.total_debit|rs }}</td>
+                <td><span class="adm-tag {{ 'ok' if v.status == 'posted' else ('info' if v.status == 'draft' else 'muted') }}">{{ v.status }}</span></td>
+              </tr>
+            {% else %}
+              <tr><td colspan="5" class="hint">No vouchers.</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="adm-card">
+      <header><h3>Adjusting entries</h3></header>
+      <div class="body flush">
+        <div class="table-wrap">
+          <table class="table align-middle mb-0">
+            <thead><tr><th>No.</th><th>Date</th><th>Type</th><th>Description</th>
+              <th class="text-end">Amount</th><th>Status</th></tr></thead>
+            <tbody>
+            {% for a in adjustments %}
+              <tr>
+                <td class="code">{{ a.adj_no }}</td>
+                <td>{{ a.adj_date }}</td>
+                <td><span class="adm-tag info">{{ a.kind }}</span></td>
+                <td class="hint" style="font-size:12px">{{ (a.description or '')|truncate(40) }}</td>
+                <td class="num">{{ a.total_debit|rs }}</td>
+                <td><span class="adm-tag {{ 'ok' if a.status == 'posted' else 'muted' }}">{{ a.status }}</span></td>
+              </tr>
+            {% else %}
+              <tr><td colspan="6" class="hint">No adjustments.</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div>
+    <section class="adm-card">
+      <header><h3>Business information</h3></header>
+      <div class="body" style="font-size:12.5px">
+        <dl class="kv mb-0">
+          <dt>Owner</dt><dd>{{ business.owner_name or '—' }}</dd>
+          <dt>Email</dt><dd>{{ business.email or '—' }}</dd>
+          <dt>Phone</dt><dd>{{ business.phone or '—' }}</dd>
+          <dt>Address</dt><dd>{{ business.address or '—' }}</dd>
+          <dt>Currency</dt><dd>{{ business.currency }}</dd>
+          <dt>Method</dt><dd>{{ business.accounting_method or '—' }}</dd>
+          <dt>Financial year</dt><dd>{{ business.fy_start }} → {{ business.fy_end }}</dd>
+          <dt>Login</dt><dd>{{ owner.email if owner else '—' }}</dd>
+        </dl>
+      </div>
+    </section>
+
+    <section class="adm-card">
+      <header><h3>Accounting periods</h3></header>
+      <div class="body flush">
+        <ul class="adm-list">
+          {% for p in periods %}
+            <li><span>{{ p.label }}</span>
+              <span class="hint">{{ p.start_date }} → {{ p.end_date }}</span>
+              <span class="when">
+                {% if p.is_active %}<span class="adm-tag ok">active</span>
+                {% else %}<span class="adm-tag muted">{{ p.kind }}</span>{% endif %}</span></li>
+          {% else %}
+            <li class="hint">No period defined.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section class="adm-card">
+      <header><h3>Closing entries</h3></header>
+      <div class="body flush">
+        <ul class="adm-list">
+          {% for c in closings %}
+            <li><span class="code">{{ c.entry_no }}</span>
+              <span class="hint">{{ c.entry_date }}</span>
+              <span class="when"><span class="adm-tag {{ 'ok' if c.status == 'posted' else 'muted' }}">{{ c.status }}</span></span></li>
+          {% else %}
+            <li class="hint">The period has not been closed yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

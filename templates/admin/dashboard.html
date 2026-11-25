@@ -1,0 +1,127 @@
+{% extends 'admin/base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="adm-hero">
+  <div>
+    <h1>System overview</h1>
+    <p>Live counts straight from the accounting database — every business, voucher,
+       adjustment and closing entry that exists in the system.</p>
+  </div>
+  <div class="ms-auto d-flex gap-2 flex-wrap">
+    <span class="pill">Database · {{ db_size }}</span>
+    <span class="pill">Entries {{ stats.first_entry or '—' }} → {{ stats.last_entry or '—' }}</span>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi"><span>Users</span><strong>{{ stats.users }}</strong><small>registered accounts</small></div>
+  <div class="kpi"><span>Businesses</span><strong>{{ stats.businesses }}</strong><small>sets of books</small></div>
+  <div class="kpi"><span>Vouchers</span><strong>{{ stats.vouchers }}</strong>
+    <small>{{ stats.posted }} posted · {{ stats.drafts }} draft · {{ stats.reversed }} reversed</small></div>
+  <div class="kpi"><span>Journal lines</span><strong>{{ stats.lines }}</strong><small>debit + credit rows</small></div>
+  <div class="kpi"><span>Adjustments</span><strong>{{ stats.adjustments }}</strong><small>period-end entries</small></div>
+  <div class="kpi"><span>Closing entries</span><strong>{{ stats.closings }}</strong><small>periods closed</small></div>
+  <div class="kpi"><span>Accounts</span><strong>{{ stats.accounts }}</strong><small>{{ stats.periods }} accounting periods</small></div>
+  <div class="kpi"><span>Audit events</span><strong>{{ stats.events }}</strong><small>full activity trail</small></div>
+</div>
+
+<div class="adm-grid">
+  <div>
+    <section class="adm-card">
+      <header><h3>Businesses</h3><span class="spacer"></span>
+        <a class="btn btn-sm btn-ghost" href="{{ url_for('admin_businesses') }}">View all</a></header>
+      <div class="body flush">
+        <div class="table-wrap">
+          <table class="table align-middle mb-0">
+            <thead><tr><th>Business</th><th>Owner</th><th class="text-end">Vouchers</th>
+              <th class="text-end">Adj.</th><th>Books</th><th></th></tr></thead>
+            <tbody>
+            {% for r in rows[:8] %}
+              <tr>
+                <td><strong>{{ r.business.name }}</strong>
+                  <div class="hint" style="font-size:11px">{{ r.business.business_type or '—' }} · {{ r.business.currency }}</div></td>
+                <td class="hint" style="font-size:12px">{{ r.owner.email if r.owner else '—' }}</td>
+                <td class="num">{{ r.vouchers }}</td>
+                <td class="num">{{ r.adjustments }}</td>
+                <td>
+                  {% if r.books and r.books.balanced %}<span class="adm-tag ok">Balanced</span>
+                  {% elif r.books %}<span class="adm-tag bad">Difference</span>
+                  {% else %}<span class="adm-tag muted">—</span>{% endif %}
+                </td>
+                <td class="text-end"><a class="btn btn-sm btn-ghost"
+                   href="{{ url_for('admin_business_detail', business_id=r.business.id) }}">Open</a></td>
+              </tr>
+            {% else %}
+              <tr><td colspan="6" class="hint">No businesses have been created yet.</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="adm-card">
+      <header><h3>Latest vouchers in the system</h3></header>
+      <div class="body flush">
+        <div class="table-wrap">
+          <table class="table align-middle mb-0">
+            <thead><tr><th>Voucher</th><th>Date</th><th>Description</th>
+              <th class="text-end">Amount</th><th>Status</th></tr></thead>
+            <tbody>
+            {% for v in recent_vouchers %}
+              <tr>
+                <td class="code">{{ v.voucher_no }}</td>
+                <td>{{ v.entry_date }}</td>
+                <td class="hint" style="font-size:12px">{{ (v.description or v.entry_type)|truncate(46) }}</td>
+                <td class="num">{{ v.total_debit|rs }}</td>
+                <td><span class="adm-tag {{ 'ok' if v.status == 'posted' else ('info' if v.status == 'draft' else 'muted') }}">{{ v.status }}</span></td>
+              </tr>
+            {% else %}
+              <tr><td colspan="5" class="hint">No vouchers yet.</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div>
+    <section class="adm-card">
+      <header><h3>Recent activity</h3><span class="spacer"></span>
+        <a class="btn btn-sm btn-ghost" href="{{ url_for('admin_activity') }}">Full log</a></header>
+      <div class="body flush">
+        <ul class="adm-list">
+          {% for e in recent_events %}
+            {% set ev_user = owners.get(e.user_id) %}
+            <li>
+              <span class="adm-tag {{ 'info' if e.action.startswith('Admin') else 'muted' }}">
+                {{ 'admin' if e.action.startswith('Admin') else (ev_user.name if ev_user else 'system') }}</span>
+              <span>{{ e.action }}
+                {% if e.record_type %}<span class="hint">· {{ e.record_type }}</span>{% endif %}</span>
+              <span class="when">{{ e.created_at.strftime('%d %b %H:%M') }}</span>
+            </li>
+          {% else %}
+            <li class="hint">No activity recorded yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section class="adm-card">
+      <header><h3>Connections</h3></header>
+      <div class="body" style="font-size:12.5px;color:#4b5b78">
+        <p class="mb-2">The admin panel and the accounting application share one
+          database, so counts here change the moment a user posts a voucher.</p>
+        <ul style="padding-left:18px;margin:0">
+          <li><a href="{{ url_for('admin_reports') }}">Books check</a> — trial balance and profit per business</li>
+          <li><a href="{{ url_for('admin_users') }}">Users</a> — who owns which books</li>
+          <li><a href="{{ url_for('admin_activity') }}">Activity log</a> — every action, including admin sign-ins</li>
+          <li><a href="{{ url_for('index') }}" target="_blank" rel="noopener">Open the application</a></li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

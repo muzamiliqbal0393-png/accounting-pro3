@@ -1,0 +1,113 @@
+{% from 'partials/icons.html' import icon %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101D3A">
+  <title>{% block title %}Administrator{% endblock %} · ACCOUNTING PRO Admin</title>
+  <link rel="icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .adm-top { background:#101D3A; color:#fff; padding:0 22px; display:flex; align-items:center;
+               gap:18px; height:64px; position:sticky; top:0; z-index:20; }
+    .adm-top .brand { display:flex; align-items:center; gap:10px; color:#fff; text-decoration:none; }
+    .adm-top .brand img { width:34px; height:34px; border-radius:9px; }
+    .adm-top .brand strong { font-size:14px; letter-spacing:.5px; display:block; line-height:1.1; }
+    .adm-top .brand span { font-size:10.5px; color:#9fb0d0; letter-spacing:1.6px; text-transform:uppercase; }
+    .adm-nav { display:flex; gap:4px; margin-left:14px; flex-wrap:wrap; }
+    .adm-nav a { color:#c7d2e8; text-decoration:none; font-size:13px; font-weight:600;
+                 padding:8px 12px; border-radius:9px; }
+    .adm-nav a:hover { background:rgba(255,255,255,.08); color:#fff; }
+    .adm-nav a.active { background:#1d4ed8; color:#fff; }
+    .adm-right { margin-left:auto; display:flex; align-items:center; gap:10px; }
+    .adm-right .who { font-size:12px; color:#c7d2e8; text-align:right; line-height:1.2; }
+    .adm-right .who strong { display:block; color:#fff; font-size:12.5px; }
+    .adm-btn-open { color:#fff; border:1px solid rgba(255,255,255,.35); background:transparent;
+                    border-radius:9px; padding:6px 12px; font-size:12.5px; font-weight:600;
+                    text-decoration:none; white-space:nowrap; }
+    .adm-btn-open:hover { background:rgba(255,255,255,.14); color:#fff; }
+    .adm-wrap { padding:22px; max-width:1420px; margin:0 auto; }
+    .adm-hero { background:linear-gradient(115deg,#101D3A 0%,#1d3a6e 55%,#1d4ed8 100%);
+                color:#fff; border-radius:16px; padding:20px 24px; margin-bottom:18px;
+                display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+    .adm-hero h1 { font-size:22px; margin:0; font-weight:700; color:#fff; }
+    .adm-hero p { margin:2px 0 0; color:#c7d2e8; font-size:13px; }
+    .adm-hero .pill { background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.22);
+                      border-radius:999px; padding:6px 12px; font-size:11.5px; letter-spacing:.4px; }
+    .kpi-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px;
+                margin-bottom:18px; }
+    @media (max-width:1100px) { .kpi-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media (max-width:760px)  { .kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    .kpi { background:#fff; border:1px solid #e3e8f2; border-radius:14px; padding:14px 16px; }
+    .kpi span { font-size:11px; text-transform:uppercase; letter-spacing:.9px; color:#6b7a99;
+                font-weight:700; }
+    .kpi strong { display:block; font-size:24px; line-height:1.25; color:#101D3A; font-weight:800; }
+    .kpi small { color:#8a97b3; font-size:11.5px; }
+    .adm-grid { display:grid; grid-template-columns:1.55fr 1fr; gap:16px; align-items:start; }
+    @media (max-width:1050px) { .adm-grid { grid-template-columns:1fr; } }
+    .adm-card { background:#fff; border:1px solid #e3e8f2; border-radius:14px; overflow:hidden;
+                margin-bottom:16px; }
+    .adm-card > header { padding:13px 16px; border-bottom:1px solid #eef1f7; display:flex;
+                         align-items:center; gap:10px; }
+    .adm-card > header h3 { font-size:14.5px; margin:0; color:#101D3A; font-weight:700; }
+    .adm-card > header .spacer { margin-left:auto; }
+    .adm-card .body { padding:14px 16px; }
+    .adm-card .body.flush { padding:0; }
+    .adm-tag { font-size:10.5px; font-weight:700; letter-spacing:.5px; padding:3px 8px;
+               border-radius:999px; text-transform:uppercase; }
+    .adm-tag.ok { background:#e6f7ee; color:#0f7a45; }
+    .adm-tag.bad { background:#fdeaea; color:#b3261e; }
+    .adm-tag.info { background:#e8eefc; color:#1d4ed8; }
+    .adm-tag.muted { background:#eef1f7; color:#5a6a88; }
+    .adm-list { list-style:none; margin:0; padding:0; }
+    .adm-list li { display:flex; gap:10px; padding:9px 16px; border-bottom:1px solid #f1f4fa;
+                   font-size:12.5px; }
+    .adm-list li:last-child { border-bottom:0; }
+    .adm-list .when { margin-left:auto; color:#8a97b3; white-space:nowrap; font-size:11.5px; }
+    .adm-foot { color:#8a97b3; font-size:11.5px; text-align:center; padding:18px 0 26px; }
+  </style>
+</head>
+<body style="background:#f4f6fb">
+
+<header class="adm-top">
+  <a class="brand" href="{{ url_for('admin_dashboard') }}">
+    <img src="{{ url_for('static', filename='images/brand/logo-mark.png') }}" alt="">
+    <span><strong>ACCOUNTING PRO</strong><span>Admin panel</span></span>
+  </a>
+  {% if admin_signed_in %}
+  <nav class="adm-nav">
+    <a class="{{ 'active' if request.endpoint == 'admin_dashboard' }}" href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+    <a class="{{ 'active' if request.endpoint in ['admin_businesses','admin_business_detail'] }}" href="{{ url_for('admin_businesses') }}">Businesses</a>
+    <a class="{{ 'active' if request.endpoint == 'admin_users' }}" href="{{ url_for('admin_users') }}">Users</a>
+    <a class="{{ 'active' if request.endpoint == 'admin_reports' }}" href="{{ url_for('admin_reports') }}">Books</a>
+    <a class="{{ 'active' if request.endpoint == 'admin_activity' }}" href="{{ url_for('admin_activity') }}">Activity log</a>
+  </nav>
+  <div class="adm-right">
+    <div class="who"><strong>{{ session.get('admin_email') }}</strong>administrator</div>
+    <a class="adm-btn-open" href="{{ url_for('index') }}" target="_blank"
+       rel="noopener">Open app</a>
+    <form method="post" action="{{ url_for('admin_logout') }}" class="d-inline">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-sm" style="background:#fff;color:#101D3A;font-weight:600">Sign out</button>
+    </form>
+  </div>
+  {% endif %}
+</header>
+
+<main class="adm-wrap">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ 'success' if category == 'success' else ('danger' if category == 'danger' else 'info') }}"
+           style="border-radius:12px">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+  <div class="adm-foot">
+    Administrator panel · same database as the accounting application · 
+    {{ today|default('') }} {% if now %}· {{ now.strftime('%d %b %Y %H:%M') }} UTC{% endif %}
+  </div>
+</main>
+</body>
+</html>
