@@ -483,6 +483,18 @@ def register_routes(app):
             flash("Your message could not be saved just now. Please try again.", "danger")
             return redirect(url_for("index") + "#contact")
 
+        # also store it in the database so the administrator panel sees every
+        # message immediately (the JSON-lines file above is only a local copy)
+        try:
+            db.session.add(AuditLog(
+                user_id=None, business_id=None, action="Contact message",
+                record_type="Contact", record_id=None,
+                new_values=json.dumps(record)[:4000],
+                ip_address=request.remote_addr))
+            db.session.commit()
+        except Exception:                                # pragma: no cover
+            db.session.rollback()
+
         session["contact_sent"] = True
         return redirect(url_for("index") + "#contact")
 

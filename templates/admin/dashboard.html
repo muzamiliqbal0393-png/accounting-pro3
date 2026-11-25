@@ -29,7 +29,9 @@
 <div class="adm-grid">
   <div>
     <section class="adm-card">
-      <header><h3>Businesses</h3><span class="spacer"></span>
+      <header><h3>Businesses</h3>
+        {% if stats.demo_hidden %}<span class="adm-tag muted">{{ stats.demo_hidden }} demo/empty hidden</span>{% endif %}
+        <span class="spacer"></span>
         <a class="btn btn-sm btn-ghost" href="{{ url_for('admin_businesses') }}">View all</a></header>
       <div class="body flush">
         <div class="table-wrap">
@@ -88,6 +90,48 @@
   </div>
 
   <div>
+    <section class="adm-card">
+      <header><h3>Live system activity</h3>
+        {% if stats.new_events %}<span class="adm-tag bad">{{ stats.new_events }} new</span>{% endif %}
+        <span class="spacer"></span>
+        <a class="btn btn-sm btn-ghost" href="{{ url_for('admin_activity') }}">All</a></header>
+      <div class="body flush">
+        <ul class="adm-list">
+          {% for f in feed %}
+            <li>
+              <span class="adm-tag {{ 'info' if f.action == 'Contact message' else ('ok' if f.action == 'User login' else 'muted') }}">
+                {{ {'User login':'login','User registered':'signup','Contact message':'message',
+                    'Transaction posted':'voucher','Report exported':'export'}.get(f.action, f.action) }}</span>
+              <span>{{ f.detail }}</span>
+              <span class="when">{{ f.at.strftime('%d %b %H:%M') if f.at else '' }}</span>
+            </li>
+          {% else %}
+            <li class="hint">No activity yet — it appears here the moment somebody signs in
+              or sends a message.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section class="adm-card">
+      <header><h3>Contact messages</h3>
+        {% if stats.contact_messages %}<span class="adm-tag bad">{{ stats.contact_messages }}</span>{% endif %}
+        <span class="spacer"></span>
+        <a class="btn btn-sm btn-ghost" href="{{ url_for('admin_messages') }}">Open</a></header>
+      <div class="body flush">
+        <ul class="adm-list">
+          {% for m in messages %}
+            <li><span class="adm-tag info">message</span>
+              <span><strong>{{ m.name }}</strong> · {{ m.subject }}
+                <span class="hint">— {{ m.message[:60] }}{% if m.message|length > 60 %}…{% endif %}</span></span>
+              <span class="when">{{ m.at.strftime('%d %b %H:%M') if m.at else '' }}</span></li>
+          {% else %}
+            <li class="hint">No contact messages yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
     <section class="adm-card">
       <header><h3>Recent activity</h3><span class="spacer"></span>
         <a class="btn btn-sm btn-ghost" href="{{ url_for('admin_activity') }}">Full log</a></header>

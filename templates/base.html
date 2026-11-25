@@ -79,6 +79,9 @@
         <a class="nav-link {{ 'active' if ep == 'audit_log' }}" href="{{ url_for('audit_log') }}">{{ icon('shield') }} Audit Log</a>
         <a class="nav-link {{ 'active' if ep == 'backup_page' }}" href="{{ url_for('backup_page') }}">{{ icon('database') }} Backup &amp; Restore</a>
         <a class="nav-link {{ 'active' if ep == 'settings' }}" href="{{ url_for('settings') }}">{{ icon('settings') }} Settings</a>
+        <a class="nav-link admin-link" href="{{ url_for('admin_dashboard') }}"
+           title="Separate administrator area — same database">
+          {{ icon('shield') }} Admin Dashboard<span class="nav-tag">ADMIN</span></a>
       </div>
     </nav>
 
@@ -165,6 +168,7 @@
           <ul class="dropdown-menu dropdown-menu-end">
             <li><a class="dropdown-item" href="{{ url_for('settings') }}">Settings</a></li>
             <li><a class="dropdown-item" href="{{ url_for('business_profile') }}">Business Profile</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a></li>
             <li><hr class="dropdown-divider"></li>
             <li>
               <form method="post" action="{{ url_for('logout') }}">

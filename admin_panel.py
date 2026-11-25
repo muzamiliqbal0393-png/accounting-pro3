@@ -11,6 +11,7 @@ Sign in with the administrator credentials configured in ``config.py``
 variables).  An administrator is *not* a business user: the admin session is
 kept apart from the normal user session and cannot touch a business's books.
 """
+import json
 import os
 import secrets
 from datetime import date, datetime, timedelta
@@ -103,6 +104,22 @@ def _overview():
     return counts
 
 
+DEMO_NAMES = {"demo - sample traders", "demo sample traders"}
+
+
+def _is_demo(business, owner):
+    """A business is treated as demo / placeholder when it is the seeded
+    sample business, has no name, or belongs to the seeded demo user."""
+    name = (business.name or "").strip().lower()
+    if name in DEMO_NAMES:
+        return True
+    if not name:
+        return True
+    if owner is not None and (owner.email or "").lower().startswith("demo@"):
+        return True
+    return False
+
+
 def _business_rows():
     """One row per business, with the numbers taken straight from the books."""
     businesses = Business.query.order_by(Business.name).all()
@@ -124,18 +141,66 @@ def _business_rows():
     rows = []
     for b in businesses:
         period = b.active_period()
+        owner = users_by_business.get(b.id)
         row = {
             "business": b,
-            "owner": users_by_business.get(b.id),
+            "owner": owner,
             "vouchers": voucher_counts.get(b.id, 0),
             "adjustments": adj_counts.get(b.id, 0),
             "closings": close_counts.get(b.id, 0),
             "last_entry": last_dates.get(b.id),
             "period": period,
             "balanced": None,
+            "demo": _is_demo(b, owner),
         }
         rows.append(row)
     return rows
+
+
+def _contact_messages(limit=None):
+    """Messages sent through the public contact form (stored in the audit log)."""
+    rows = (AuditLog.query.filter(AuditLog.action == "Contact message")
+            .order_by(AuditLog.created_at.desc()))
+    if limit:
+        rows = rows.limit(limit)
+    out = []
+    for r in rows.all():
+        try:
+            data = json.loads(r.new_values or "{}")
+        except Exception:
+            data = {"message": (r.new_values or "")[:400]}
+        out.append({"id": r.id, "at": r.created_at, "ip": r.ip_address,
+                    "name": data.get("name", "—"), "email": data.get("email", "—"),
+                    "subject": data.get("subject") or "(no subject)",
+                    "message": data.get("message", "")})
+    return out
+
+
+def _system_feed(limit=14):
+    """What just happened in the whole system - logins, sign-ups, messages."""
+    query = (AuditLog.query
+             .filter(AuditLog.action.in_(["User login", "User registered",
+                                          "Contact message", "Transaction posted",
+                                          "Report exported"]))
+             .order_by(AuditLog.created_at.desc()).limit(limit))
+    users = {u.id: u for u in User.query.all()}
+    out = []
+    for e in query.all():
+        who = users.get(e.user_id)
+        detail = ""
+        if e.action == "Contact message":
+            try:
+                d = json.loads(e.new_values or "{}")
+                detail = f"{d.get('name','—')} · {d.get('subject') or d.get('message','')[:60]}"
+            except Exception:
+                detail = (e.new_values or "")[:70]
+        elif who is not None:
+            detail = who.email
+        else:
+            detail = e.ip_address or "—"
+        out.append({"action": e.action, "at": e.created_at, "detail": detail,
+                    "business_id": e.business_id, "user": who})
+    return out
 
 
 def _check_books(business_id, start=None, end=None):
@@ -199,20 +264,48 @@ def register_admin(app):
     @admin_required
     def admin_dashboard():
         stats = _overview()
-        rows = _business_rows()
+        all_rows = _business_rows()
+        rows = [r for r in all_rows if not r["demo"]]
         for row in rows:
             row["books"] = _check_books(row["business"].id)
+        stats["demo_hidden"] = len(all_rows) - len(rows)
+        stats["contact_messages"] = (db.session.query(func.count(AuditLog.id))
+                                     .filter(AuditLog.action == "Contact message")
+                                     .scalar() or 0)
+
+        # "new since your last visit" counter for the nav badge
+        seen = session.get("admin_seen_at")
+        if seen:
+            try:
+                since = datetime.fromisoformat(seen)
+            except ValueError:
+                since = None
+            if since:
+                stats["new_events"] = (db.session.query(func.count(AuditLog.id))
+                                       .filter(AuditLog.created_at > since).scalar() or 0)
+
+        feed = _system_feed()
+        messages = _contact_messages(limit=5)
         recent_events = (AuditLog.query.order_by(AuditLog.created_at.desc())
                          .limit(12).all())
         recent_vouchers = (JournalEntry.query.order_by(JournalEntry.created_at.desc())
                            .limit(8).all())
         owners = {u.id: u for u in User.query.all()}
-        return render_template("admin/dashboard.html", stats=stats, rows=rows,
-                               recent_events=recent_events,
-                               recent_vouchers=recent_vouchers, owners=owners,
-                               db_size=_db_size(),
-                               now=datetime.utcnow(),
-                               today=date.today())
+        template = render_template("admin/dashboard.html", stats=stats, rows=rows,
+                                   recent_events=recent_events, feed=feed,
+                                   messages=messages,
+                                   recent_vouchers=recent_vouchers, owners=owners,
+                                   db_size=_db_size(),
+                                   now=datetime.utcnow(),
+                                   today=date.today())
+        session["admin_seen_at"] = datetime.utcnow().isoformat()
+        return template
+
+    @app.route("/admin/messages")
+    @admin_required
+    def admin_messages():
+        return render_template("admin/messages.html",
+                               messages=_contact_messages())
 
     @app.route("/admin/businesses")
     @admin_required
@@ -225,12 +318,17 @@ def register_admin(app):
                                         Business.business_type.ilike(f"%{q}%")))
         businesses = query.order_by(Business.name).all()
         rows = _business_rows()
+        show_empty = request.args.get("empty") == "1"
+        rows = [r for r in rows if not r["demo"]]
+        if not show_empty:
+            rows = [r for r in rows if (r["business"].name or "").strip()]
         if q:
             keep = {b.id for b in businesses}
             rows = [r for r in rows if r["business"].id in keep]
         for row in rows:
             row["books"] = _check_books(row["business"].id)
-        return render_template("admin/businesses.html", rows=rows, q=q)
+        return render_template("admin/businesses.html", rows=rows, q=q,
+                               show_empty=show_empty)
 
     @app.route("/admin/business/<int:business_id>")
     @admin_required
@@ -304,7 +402,10 @@ def register_admin(app):
     def admin_reports():
         """Cross-business view: what every set of books adds up to."""
         rows = []
+        owners = {u.id: u for u in User.query.all()}
         for business in Business.query.order_by(Business.name).all():
+            if _is_demo(business, owners.get(business.user_id)):
+                continue
             tb = _check_books(business.id)
             pl = profit_and_loss(business.id)
             rows.append({"business": business, "books": tb,

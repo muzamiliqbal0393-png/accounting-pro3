@@ -17,6 +17,8 @@
              placeholder="Search name, owner or type">
       <button class="btn btn-sm btn-primary">Search</button>
       {% if q %}<a class="btn btn-sm btn-ghost" href="{{ url_for('admin_businesses') }}">Clear</a>{% endif %}
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('admin_businesses', empty='0' if show_empty else '1', q=q) }}">
+        {{ 'Hide empty' if show_empty else 'Show empty profiles' }}</a>
     </form>
   </header>
   <div class="body flush">

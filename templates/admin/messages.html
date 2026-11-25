@@ -1,0 +1,32 @@
+{% extends 'admin/base.html' %}
+{% block title %}Messages{% endblock %}
+{% block content %}
+
+<div class="adm-hero">
+  <div><h1>Contact messages</h1>
+    <p>Every message sent from the public contact form — it appears here the moment
+       the visitor presses Send, with no email client needed.</p></div>
+  <span class="pill">{{ messages|length }} message{{ '' if messages|length == 1 else 's' }}</span>
+</div>
+
+{% for m in messages %}
+  <section class="adm-card">
+    <header>
+      <h3>{{ m.subject }}</h3>
+      <span class="spacer"></span>
+      <span class="hint" style="font-size:12px">{{ m.at.strftime('%d %b %Y %H:%M') if m.at }}</span>
+    </header>
+    <div class="body">
+      <div style="font-size:13px;color:#101D3A;font-weight:700">{{ m.name }}
+        <a href="mailto:{{ m.email }}" class="hint" style="font-weight:500">{{ m.email }}</a></div>
+      <p style="margin:8px 0 0;font-size:13px;color:#3c4a68;white-space:pre-wrap">{{ m.message }}</p>
+      <div class="hint" style="font-size:11.5px;margin-top:8px">IP {{ m.ip or '—' }} · stored in the system database</div>
+    </div>
+  </section>
+{% else %}
+  <section class="adm-card"><div class="body hint">
+    No messages yet. Try the contact form on the public home page — the message shows
+    up here immediately.
+  </div></section>
+{% endfor %}
+{% endblock %}
